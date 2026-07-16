@@ -133,10 +133,9 @@
                     </div>
 
                     <div class="d-flex justify-content-between mb-3 align-items-center">
-                        <span class="text-muted">คอร์สโปรโมชั่น</span>
-                        <div class="input-group input-group-sm w-50">
-                            <input type="text" id="promotion-input" class="form-control text-end" value="">
-                            <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="use-package-checkbox" checked>
+                            <label class="form-check-label text-muted" for="use-package-checkbox">ตัดสิทธิ์แพ็กเกจที่ลูกค้ามีอัตโนมัติ</label>
                         </div>
                     </div>
                     
@@ -890,6 +889,7 @@
             staff_id: staffSelectEl.value ? Number(staffSelectEl.value) : null,
             discount_amount: parseFloat(discountInputEl.value) || 0,
             payment_method: getActivePaymentMethod(),
+            use_package: document.getElementById('use-package-checkbox') ? document.getElementById('use-package-checkbox').checked : true,
             items: cart.map(item => ({
                 type: item.type,
                 source_id: item.sourceId,

@@ -64,6 +64,16 @@ class CommissionService
         else if ($config->type === 'percent') {
             // แบบเปอร์เซ็นต์: หักต้นทุนร้านก่อน (Deduct Cost)
             $unitPrice = (float) $item->unit_price;
+            
+            // หากราคาเป็น 0 (กรณีมาจากการตัดแพ็กเกจ ซึ่ง unit_price จะโดนปรับเป็น 0 ในหน้า POS)
+            // ให้ดึงราคาเต็มจากฐานข้อมูลมาเป็นฐานคำนวณ เพื่อให้พนักงานยังได้ค่ามือ
+            if ($unitPrice <= 0 && $item->item_type === 'service') {
+                $service = DB::table('services')->where('id', $item->item_id)->first(['price']);
+                if ($service) {
+                    $unitPrice = (float) $service->price;
+                }
+            }
+
             $deductCost = (float) ($config->deduct_cost ?? 0);
             
             // ยอดที่เหลือหลังหักต้นทุน

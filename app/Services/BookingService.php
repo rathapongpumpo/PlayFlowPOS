@@ -49,6 +49,7 @@ class BookingService
             'statuses' => [
                 'waiting' => self::STATUSES['waiting'],
                 'in_service' => self::STATUSES['in_service'],
+                'completed' => self::STATUSES['completed'],
                 'cancelled' => self::STATUSES['cancelled'],
             ],
             'bookings' => $this->getBookingsByDate($branchId, $selectedDate),

@@ -51,6 +51,7 @@ Route::middleware(['auth', 'shop.access'])->group(function (): void {
     Route::middleware('admin.only')->group(function (): void {
         Route::get('/receipts', 'ReceiptController@index')->name('receipts');
         Route::get('/receipts/{orderId}', 'ReceiptController@show')->name('receipts.show');
+        Route::post('/receipts/{orderId}/void', 'ReceiptController@voidOrder')->name('receipts.void');
         Route::get('/customers', 'CustomerController@index')->name('customers');
         Route::post('/customers', 'CustomerController@store')->name('customers.store');
         Route::get('/customers/{customerId}/history', 'CustomerController@history')->name('customers.history');

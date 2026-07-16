@@ -39,4 +39,12 @@ class ReceiptController extends Controller
 
         return response()->json($receipt);
     }
+
+    public function voidOrder(Request $request, int $orderId): JsonResponse
+    {
+        $requestedBranchId = $request->has('branch_id') ? (int) $request->query('branch_id') : null;
+        $result = $this->receiptService->voidOrder($request->user(), $orderId, $requestedBranchId);
+
+        return response()->json($result);
+    }
 }

@@ -261,6 +261,116 @@ class ReceiptService
         return $method;
     }
 
+    public function voidOrder(User $user, int $orderId, ?int $requestedBranchId = null): array
+    {
+        $branchId = $this->resolveAuthorizedBranchId($user, $requestedBranchId);
+
+        if (!in_array($user->role, ['shop_owner', 'branch_manager'])) {
+            throw ValidationException::withMessages([
+                'receipt' => ['ไม่มีสิทธิ์ยกเลิกบิล'],
+            ]);
+        }
+
+        $order = DB::table('orders')
+            ->where('id', $orderId)
+            ->where('branch_id', $branchId)
+            ->first();
+
+        if ($order === null) {
+            throw ValidationException::withMessages([
+                'receipt' => ['ไม่พบบิลที่ระบุในสาขานี้'],
+            ]);
+        }
+
+        if ($order->status === 'voided') {
+            throw ValidationException::withMessages([
+                'receipt' => ['บิลนี้ถูกยกเลิกไปแล้ว'],
+            ]);
+        }
+
+        DB::transaction(function () use ($orderId, $order): void {
+            // คืนโควต้าแพ็กเกจ (กรณีตัดแพ็กเกจ)
+            $packageItems = DB::table('order_items')
+                ->where('order_id', $orderId)
+                ->where('item_type', 'package')
+                ->where('unit_price', 0)
+                ->get();
+
+            foreach ($packageItems as $item) {
+                // คืนโควต้าให้แพ็กเกจล่าสุดของลูกค้านี้
+                $latestPackage = DB::table('customer_packages')
+                    ->where('customer_id', $order->customer_id)
+                    ->where('package_id', $item->item_id)
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($latestPackage) {
+                    DB::table('customer_packages')
+                        ->where('id', $latestPackage->id)
+                        ->increment('remaining_qty', $item->qty);
+                }
+            }
+
+            // ลบการซื้อแพ็กเกจในบิลนี้ (กรณีซื้อแพ็กเกจใหม่)
+            $purchasedPackages = DB::table('order_items')
+                ->where('order_id', $orderId)
+                ->where('item_type', 'package')
+                ->where('unit_price', '>', 0)
+                ->get();
+
+            foreach ($purchasedPackages as $item) {
+                // หาแพ็กเกจที่เพิ่งถูกเพิ่มไปในเวลาที่ใกล้เคียงกัน (ไม่เกิน 5 นาที)
+                $recentlyBought = DB::table('customer_packages')
+                    ->where('customer_id', $order->customer_id)
+                    ->where('package_id', $item->item_id)
+                    ->where('bought_at', '>=', \Carbon\Carbon::parse($order->created_at)->subMinutes(5))
+                    ->where('bought_at', '<=', \Carbon\Carbon::parse($order->created_at)->addMinutes(5))
+                    ->orderByDesc('id')
+                    ->limit($item->qty)
+                    ->pluck('id');
+
+                if ($recentlyBought->isNotEmpty()) {
+                    DB::table('customer_packages')
+                        ->whereIn('id', $recentlyBought)
+                        ->delete();
+                }
+            }
+
+            // ลบคอมมิชชัน
+            if (\Illuminate\Support\Facades\Schema::hasTable('commissions')) {
+                $itemIds = DB::table('order_items')
+                    ->where('order_id', $orderId)
+                    ->pluck('id');
+
+                if ($itemIds->isNotEmpty()) {
+                    DB::table('commissions')
+                        ->whereIn('order_item_id', $itemIds->all())
+                        ->delete();
+                }
+            }
+
+            // เปลี่ยนสถานะบิลเป็น voided
+            DB::table('orders')
+                ->where('id', $orderId)
+                ->update([
+                    'status' => 'voided',
+                    'updated_at' => now(),
+                ]);
+
+            // อัปเดตสถานะคิวจองที่เชื่อมโยงกับบิลนี้ให้เป็น cancelled
+            if (\Illuminate\Support\Facades\Schema::hasTable('bookings')) {
+                DB::table('bookings')
+                    ->where('order_id', $orderId)
+                    ->update([
+                        'status' => 'cancelled',
+                        'cancel_reason' => 'ยกเลิกบิล (Void)',
+                    ]);
+            }
+        });
+
+        return ['success' => true];
+    }
+
     private function translateOrderStatus(string $status): string
     {
         if ($status === 'paid') {

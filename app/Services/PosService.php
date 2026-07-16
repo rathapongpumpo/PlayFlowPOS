@@ -55,6 +55,7 @@ class PosService
         $staffId = isset($payload['staff_id']) && $payload['staff_id'] !== null ? (int) $payload['staff_id'] : null;
         $discountAmount = isset($payload['discount_amount']) ? (float) $payload['discount_amount'] : 0.0;
         $paymentMethod = $this->normalizePaymentMethod((string) ($payload['payment_method'] ?? 'cash'));
+        $usePackage = isset($payload['use_package']) ? (bool) $payload['use_package'] : true; // Default to true for backward compatibility
         $bookingContext = isset($payload['booking_context']) && is_array($payload['booking_context'])
             ? $payload['booking_context']
             : null;
@@ -76,9 +77,10 @@ class PosService
             $customerId,
             $discountAmount,
             $paymentMethod,
+            $usePackage,
             $bookingContext
         ): array {
-            $normalized = $this->normalizeCartItems($branchId, $items, $staffId, $customerId);
+            $normalized = $this->normalizeCartItems($branchId, $items, $staffId, $customerId, $usePackage);
             $normalizedItems = $normalized['items'];
             $discount = max(0.0, $discountAmount);
             $subtotal = array_reduce($normalizedItems, static function (float $carry, array $item): float {
@@ -135,7 +137,7 @@ class PosService
             if ($bookingContext !== null) {
                 if (!empty($bookingContext['is_paid'])) {
                     $isReCheckout = !empty($bookingContext['re_checkout']);
-                    $canReCheckout = in_array($user->role ?? '', ['shop_owner', 'branch_manager'], true);
+                    $canReCheckout = in_array($user->role ?? '', ['shop_owner', 'branch_manager', 'admin'], true);
 
                     if (!$isReCheckout || !$canReCheckout) {
                         throw ValidationException::withMessages([
@@ -357,12 +359,16 @@ class PosService
         }
     }
 
-    private function normalizeCartItems(int $branchId, array $items, ?int $staffId, ?int $customerId): array
+    private function normalizeCartItems(int $branchId, array $items, ?int $staffId, ?int $customerId, bool $usePackage = true): array
     {
         $normalized = [];
         $packageUsagePlan = [];
         $packagePurchasePlan = [];
-        $availablePackageBalances = $this->loadCustomerPackageBalancesForRedeem($branchId, $customerId);
+        
+        $availablePackageBalances = [];
+        if ($usePackage) {
+            $availablePackageBalances = $this->loadCustomerPackageBalancesForRedeem($branchId, $customerId);
+        }
 
         foreach ($items as $index => $item) {
             $type = isset($item['type']) ? (string) $item['type'] : '';
@@ -790,6 +796,9 @@ class PosService
             if (!empty($serviceIds)) {
                 $context['serviceIds'] = $serviceIds;
                 $context['serviceId'] = $serviceIds[0];
+            }
+            if (isset($query['customer_id']) && (int) $query['customer_id'] > 0) {
+                $context['customerId'] = (int) $query['customer_id'];
             }
             if (isset($query['start_time'])) {
                 $context['startTime'] = (string) $query['start_time'];

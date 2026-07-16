@@ -429,7 +429,7 @@
     const START_MINUTES = {{ $startMinutes }};
     const END_MINUTES = {{ $endMinutes }};
     const USER_ROLE = @json(auth()->user() ? auth()->user()->role : 'staff');
-    const CAN_EDIT_PAID = USER_ROLE === 'shop_owner' || USER_ROLE === 'branch_manager';
+    const CAN_EDIT_PAID = USER_ROLE === 'shop_owner' || USER_ROLE === 'branch_manager' || USER_ROLE === 'admin';
     const activeBranchId = @json($activeBranchId);
     const staffData = @json($staff);
     const customerData = @json($customers);
@@ -1180,45 +1180,49 @@
         }
     }
 
-    function markAsPaid() {
+    async function markAsPaid() {
         const payload = collectBookingPayload();
         if (!payload) return;
 
-        // ตรวจสอบว่าเป็นการชำระใหม่ (re-checkout) ของ booking ที่ชำระแล้ว
-        const currentBooking = editingBookingId
-            ? bookings.find(b => normalizeId(b.id) === normalizeId(editingBookingId))
-            : null;
-        const isReCheckout = Boolean(currentBooking && currentBooking.paid && CAN_EDIT_PAID);
+        try {
+            if (payBookingBtn) payBookingBtn.disabled = true;
+            
+            const isEditing = Boolean(editingBookingId);
+            const url = isEditing
+                ? `${bookingApi.updateBase}/${editingBookingId}`
+                : bookingApi.store;
+            const method = isEditing ? 'PUT' : 'POST';
+            
+            const response = await requestJson(url, {
+                method,
+                body: JSON.stringify(payload),
+            });
+            
+            const savedBooking = response.booking;
+            upsertBooking(savedBooking);
+            
+            const isReCheckout = Boolean(savedBooking.paid && CAN_EDIT_PAID);
+            
+            const params = new URLSearchParams({
+                from_booking: '1',
+                booking_id: String(savedBooking.id),
+                queue_date: savedBooking.queueDate || payload.queue_date
+            });
+            
+            if (activeBranchId) {
+                params.set('branch_id', String(activeBranchId));
+            }
 
-        const params = new URLSearchParams({
-            from_booking: '1',
-            queue_date: payload.queue_date,
-            customer_id: String(payload.customer_id),
-            staff_id: payload.masseuse_id !== null ? String(payload.masseuse_id) : '',
-            service_id: String(payload.service_id),
-            bed_id: payload.bed_id !== null ? String(payload.bed_id) : '',
-            start_time: payload.start_time,
-            end_time: payload.end_time,
-        });
+            if (isReCheckout) {
+                params.set('re_checkout', '1');
+                params.set('is_paid', '1');
+            }
 
-        (payload.service_ids || []).forEach((serviceId) => {
-            params.append('service_ids[]', String(serviceId));
-        });
-
-        if (activeBranchId) {
-            params.set('branch_id', String(activeBranchId));
+            window.location.href = `${bookingApi.pos}?${params.toString()}`;
+        } catch (error) {
+            notifyError(error.message);
+            if (payBookingBtn) payBookingBtn.disabled = false;
         }
-
-        if (editingBookingId) {
-            params.set('booking_id', String(editingBookingId));
-        }
-
-        if (isReCheckout) {
-            params.set('re_checkout', '1');
-            params.set('is_paid', '1');
-        }
-
-        window.location.href = `${bookingApi.pos}?${params.toString()}`;
     }
 
     async function deleteBooking() {

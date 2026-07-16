@@ -47,6 +47,8 @@ class DashboardService
 
         $todayServiceSales = (int) round($this->sumSalesByItemType($resolvedBranchId, $today, $tomorrow, 'service'));
         $todayPackageSales = (int) round($this->sumSalesByItemType($resolvedBranchId, $today, $tomorrow, 'package'));
+        $todayTotalCombinedSales = $todayServiceSales + $todayPackageSales;
+        
         $dailyMasseuseFee = (int) round($this->sumCommissions($resolvedBranchId, $today, $tomorrow));
         $monthlyMasseuseFee = (int) round($this->sumCommissions($resolvedBranchId, $monthStart));
         $netProfit = (int) round($monthlySales) - $monthlyMasseuseFee;
@@ -69,6 +71,7 @@ class DashboardService
             'monthly_masseuse_fee' => $monthlyMasseuseFee,
             'today_service_sales' => $todayServiceSales,
             'today_package_sales' => $todayPackageSales,
+            'today_total_combined_sales' => $todayTotalCombinedSales,
             'net_profit' => $netProfit,
             'last_sync' => Carbon::now()->format('H:i'),
             'top_services' => $topServices,
@@ -438,6 +441,12 @@ class DashboardService
             ->where('oi.item_type', $itemType)
             ->where('o.created_at', '>=', $from)
             ->where('o.created_at', '<', $to);
+
+        if ($itemType === 'service') {
+            $query->leftJoin('services as s', 's.id', '=', 'oi.item_id');
+            $query = $this->applyPaidScope($query, 'o');
+            return (float) $query->sum(DB::raw('oi.qty * CASE WHEN oi.unit_price > 0 THEN oi.unit_price ELSE COALESCE(s.price, 0) END'));
+        }
 
         $query = $this->applyPaidScope($query, 'o');
 

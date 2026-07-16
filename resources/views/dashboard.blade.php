@@ -913,7 +913,19 @@
                     <div class="col-12">
                         <div class="service-name" style="font-size:0.85rem; color:var(--dash-muted); margin-bottom:0.25rem;"><i class="fa-solid fa-sun" style="margin-right:0.35rem;"></i>สรุปวันนี้</div>
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3">
+                        <div class="service-item h-100" style="border-color: rgba(31, 115, 224, 0.2);">
+                            <div class="service-row mb-2">
+                                <div>
+                                    <div class="service-name">รวมนวด+แพคเกจ</div>
+                                    <div class="service-meta">ยอดใช้งานรวมทั้งหมดวันนี้</div>
+                                </div>
+                                <span class="soft-tag"><i class="fa-solid fa-layer-group"></i> วันนี้</span>
+                            </div>
+                            <div class="spotlight-value mb-0" style="font-size: clamp(1.5rem, 1.15rem + 1vw, 2.3rem); color: #1b5fae;">{{ number_format($stats['today_total_combined_sales'] ?? 0) }} ฿</div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-md-3">
                         <div class="service-item h-100">
                             <div class="service-row mb-2">
                                 <div>
@@ -925,7 +937,7 @@
                             <div class="spotlight-value mb-0" style="font-size: clamp(1.5rem, 1.15rem + 1vw, 2.3rem);">{{ number_format($todayServiceSales) }} ฿</div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3">
                         <div class="service-item h-100">
                             <div class="service-row mb-2">
                                 <div>
@@ -937,7 +949,7 @@
                             <div class="spotlight-value mb-0" style="font-size: clamp(1.5rem, 1.15rem + 1vw, 2.3rem);">{{ number_format($todayPackageSales) }} ฿</div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-3">
                         <div class="service-item h-100">
                             <div class="service-row mb-2">
                                 <div>

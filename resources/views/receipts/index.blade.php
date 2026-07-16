@@ -118,11 +118,20 @@
             <div class="modal-body" id="receipt-detail-body">
                 <div class="text-center text-muted py-4">กำลังโหลดข้อมูล...</div>
             </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">ปิด</button>
-                <button type="button" class="btn btn-primary rounded-pill px-4" id="print-receipt-btn">
-                    <i class="bi bi-printer me-1"></i> พิมพ์
-                </button>
+            <div class="modal-footer border-0 justify-content-between">
+                <div>
+                    @if(in_array(auth()->user()->role, ['shop_owner', 'branch_manager']))
+                        <button type="button" class="btn btn-outline-danger rounded-pill px-4" id="void-receipt-btn" style="display: none;">
+                            <i class="bi bi-x-circle me-1"></i> ยกเลิกบิล
+                        </button>
+                    @endif
+                </div>
+                <div>
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">ปิด</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4" id="print-receipt-btn">
+                        <i class="bi bi-printer me-1"></i> พิมพ์
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -201,6 +210,16 @@
                 </div>
             </div>
         `;
+
+        const voidReceiptBtn = document.getElementById('void-receipt-btn');
+        if (voidReceiptBtn) {
+            if (receipt.status === 'paid') {
+                voidReceiptBtn.style.display = 'inline-block';
+                voidReceiptBtn.disabled = false;
+            } else {
+                voidReceiptBtn.style.display = 'none';
+            }
+        }
     }
 
     async function loadReceiptDetail(orderId) {
@@ -247,6 +266,52 @@
             await loadReceiptDetail(orderId);
         });
     });
+
+    const voidReceiptBtn = document.getElementById('void-receipt-btn');
+    if (voidReceiptBtn) {
+        voidReceiptBtn.addEventListener('click', async () => {
+            if (!currentReceipt || currentReceipt.status !== 'paid') return;
+
+            if (!confirm(`ยืนยันการยกเลิกบิลเลขที่ ${currentReceipt.order_no} หรือไม่?\n\n* การยกเลิกบิลจะคืนโควต้าแพ็กเกจ เปลี่ยนสถานะคิวเป็นยกเลิก และลบยอดขาย/คอมมิชชันที่เกี่ยวข้องทันที`)) {
+                return;
+            }
+
+            try {
+                voidReceiptBtn.disabled = true;
+                const params = new URLSearchParams();
+                if (activeBranchId) params.set('branch_id', String(activeBranchId));
+
+                const response = await fetch(`${receiptDetailBaseUrl}/${currentReceipt.id}/void?${params.toString()}`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                });
+
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    throw new Error(payload.message || 'ยกเลิกบิลไม่สำเร็จ');
+                }
+
+                if (window.PFPopup && typeof window.PFPopup.success === 'function') {
+                    window.PFPopup.success('ยกเลิกบิลเรียบร้อยแล้ว');
+                } else {
+                    alert('ยกเลิกบิลเรียบร้อยแล้ว');
+                }
+
+                setTimeout(() => window.location.reload(), 1000);
+            } catch (error) {
+                if (window.PFPopup && typeof window.PFPopup.error === 'function') {
+                    window.PFPopup.error(error.message);
+                } else {
+                    alert(error.message);
+                }
+                voidReceiptBtn.disabled = false;
+            }
+        });
+    }
 
     if (printReceiptBtn) {
         printReceiptBtn.addEventListener('click', () => {
