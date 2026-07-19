@@ -1005,6 +1005,58 @@
                         </div>
                     </div>
                 </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <section class="service-card mb-4">
+                <div class="section-head">
+                    <div>
+                        <h2 class="section-title"><i class="fa-solid fa-hand-holding-dollar text-primary me-2"></i> สรุปรายได้หมอนวด (วันนี้)</h2>
+                        <div class="section-note">แสดงค่าคอมมิชชั่น ทิป ยอดเงินประกัน และส่วนต่างที่ร้านต้องจ่าย (Top-up)</div>
+                    </div>
+                </div>
+                
+                @php $masseuses = $stats['masseuses'] ?? []; @endphp
+                @if(count($masseuses) > 0)
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light text-muted" style="font-size: 0.85rem;">
+                            <tr>
+                                <th class="ps-4">หมอนวด</th>
+                                <th class="text-end">คิว (วันนี้)</th>
+                                <th class="text-end">คอมมิชชั่น</th>
+                                <th class="text-end">เงินทิป (100%)</th>
+                                <th class="text-end">ยอดประกัน</th>
+                                <th class="text-end text-danger">ร้านจ่ายเพิ่ม (Top-up)</th>
+                                <th class="text-end text-success pe-4">รายได้รวมวันนี้</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($masseuses as $m)
+                            <tr>
+                                <td class="ps-4 fw-bold">
+                                    {{ $m['name'] }}
+                                </td>
+                                <td class="text-end">{{ number_format($m['today_queue_count']) }}</td>
+                                <td class="text-end">{{ number_format($m['today_commission']) }} ฿</td>
+                                <td class="text-end">{{ number_format($m['today_tip']) }} ฿</td>
+                                <td class="text-end">{{ number_format($m['today_base_salary']) }} ฿</td>
+                                <td class="text-end text-danger fw-bold">{{ number_format($m['today_top_up']) }} ฿</td>
+                                <td class="text-end text-success fw-bold pe-4 fs-5">{{ number_format($m['today_total_wage']) }} ฿</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @else
+                <div class="empty-state">
+                    ยังไม่มีข้อมูลรายได้หมอนวดสำหรับวันนี้
+                </div>
+                @endif
             </section>
         </div>
     </div>

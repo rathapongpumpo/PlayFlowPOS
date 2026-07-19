@@ -71,8 +71,11 @@
             <a href="{{ route('booking') }}" class="nav-link {{ request()->routeIs('booking*') ? 'active' : 'link-dark' }}">
                 <i class="bi bi-calendar-event-fill me-2"></i> คิว
             </a>
-            <a href="{{ route('masseuse') }}" class="nav-link {{ request()->routeIs('masseuse*') ? 'active' : 'link-dark' }}">
+            <a href="{{ route('masseuse') }}" class="nav-link {{ request()->routeIs('masseuse') || request()->routeIs('masseuse.create') || request()->routeIs('masseuse.edit') ? 'active' : 'link-dark' }}">
                 <i class="bi bi-person-badge-fill me-2"></i> หมอนวด
+            </a>
+            <a href="{{ route('masseuse.shifts') }}" class="nav-link {{ request()->routeIs('masseuse.shifts*') ? 'active' : 'link-dark' }}">
+                <i class="bi bi-calendar-check me-2"></i> ตารางงาน
             </a>
 
             @if($isAdminSidebar)

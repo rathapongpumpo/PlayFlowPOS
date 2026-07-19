@@ -53,6 +53,10 @@ class DashboardService
         $monthlyMasseuseFee = (int) round($this->sumCommissions($resolvedBranchId, $monthStart));
         $netProfit = (int) round($monthlySales) - $monthlyMasseuseFee;
 
+        $todayMasseuses = $this->buildMasseuseSummaryRows($resolvedBranchId, $today, $tomorrow);
+        $yesterdayMasseuses = $this->buildMasseuseSummaryRows($resolvedBranchId, $yesterday, $today);
+        $masseuseComparisons = $this->mergeMasseuseComparisons($todayMasseuses, $yesterdayMasseuses);
+
         return [
             'branch_id' => $resolvedBranchId,
             'branch_name' => (string) $branch->name,
@@ -77,6 +81,7 @@ class DashboardService
             'top_services' => $topServices,
             'top_masseuses' => $topMasseuses,
             'sales_chart' => $salesChart,
+            'masseuses' => $masseuseComparisons,
         ];
     }
 
@@ -363,6 +368,43 @@ class DashboardService
             ->get()
             ->keyBy('id');
 
+        $tipsQuery = DB::table('orders as o')
+            ->join('order_items as oi', 'o.id', '=', 'oi.order_id')
+            ->where('o.branch_id', $branchId)
+            ->where('oi.item_type', 'service')
+            ->whereNotNull('oi.masseuse_id')
+            ->where('o.created_at', '>=', $from)
+            ->where('o.created_at', '<', $to)
+            ->where('o.tip_amount', '>', 0)
+            ->selectRaw('oi.masseuse_id, o.id as order_id, o.tip_amount')
+            ->groupBy('o.id', 'oi.masseuse_id', 'o.tip_amount');
+
+        $tipsData = $this->applyPaidScope($tipsQuery, 'o')->get();
+        
+        $tipsByOrder = [];
+        $orderTipAmount = [];
+        foreach ($tipsData as $row) {
+            $tipsByOrder[$row->order_id][] = $row->masseuse_id;
+            $orderTipAmount[$row->order_id] = (float) $row->tip_amount;
+        }
+        
+        $tipsByMasseuse = [];
+        foreach ($tipsByOrder as $orderId => $masseuseIds) {
+            $uniqueMasseuses = array_unique($masseuseIds);
+            $count = count($uniqueMasseuses);
+            if ($count > 0) {
+                $tipPerMasseuse = $orderTipAmount[$orderId] / $count;
+                foreach ($uniqueMasseuses as $mId) {
+                    $tipsByMasseuse[$mId] = ($tipsByMasseuse[$mId] ?? 0.0) + $tipPerMasseuse;
+                }
+            }
+        }
+
+        $masseuseData = DB::table('masseuses')
+            ->where('branch_id', $branchId)
+            ->get(['id', 'base_salary'])
+            ->keyBy('id');
+
         $allIds = array_values(array_unique(array_merge(
             array_map('intval', array_keys($revenues->all())),
             array_map('intval', array_keys($commissions->all()))
@@ -372,12 +414,21 @@ class DashboardService
         foreach ($allIds as $id) {
             $revenue = $revenues->get($id);
             $commission = $commissions->get($id);
+            
+            $baseSalary = (float) ($masseuseData->get($id)->base_salary ?? 0);
+            $commissionAmt = (float) ($commission->commission ?? 0);
+            $tipAmt = (float) ($tipsByMasseuse[$id] ?? 0);
+            $topUp = max(0.0, $baseSalary - $commissionAmt);
 
             $rows[$id] = [
                 'id' => (int) $id,
                 'name' => (string) ($revenue->name ?? ('Masseuse #' . $id)),
                 'income' => (float) ($revenue->income ?? 0),
-                'commission' => (float) ($commission->commission ?? 0),
+                'commission' => $commissionAmt,
+                'tip' => $tipAmt,
+                'base_salary' => $baseSalary,
+                'top_up' => $topUp,
+                'total_wage' => $commissionAmt + $topUp + $tipAmt,
                 'queue_count' => (int) ($revenue->queue_count ?? 0),
             ];
         }
@@ -399,9 +450,17 @@ class DashboardService
                 'name' => (string) ($today['name'] ?? $yesterday['name'] ?? ('Masseuse #' . $id)),
                 'today_income' => (float) ($today['income'] ?? 0),
                 'today_commission' => (float) ($today['commission'] ?? 0),
+                'today_tip' => (float) ($today['tip'] ?? 0),
+                'today_base_salary' => (float) ($today['base_salary'] ?? 0),
+                'today_top_up' => (float) ($today['top_up'] ?? 0),
+                'today_total_wage' => (float) ($today['total_wage'] ?? 0),
                 'today_queue_count' => (int) ($today['queue_count'] ?? 0),
                 'yesterday_income' => (float) ($yesterday['income'] ?? 0),
                 'yesterday_commission' => (float) ($yesterday['commission'] ?? 0),
+                'yesterday_tip' => (float) ($yesterday['tip'] ?? 0),
+                'yesterday_base_salary' => (float) ($yesterday['base_salary'] ?? 0),
+                'yesterday_top_up' => (float) ($yesterday['top_up'] ?? 0),
+                'yesterday_total_wage' => (float) ($yesterday['total_wage'] ?? 0),
                 'yesterday_queue_count' => (int) ($yesterday['queue_count'] ?? 0),
             ];
         }

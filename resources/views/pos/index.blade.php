@@ -133,6 +133,14 @@
                     </div>
 
                     <div class="d-flex justify-content-between mb-3 align-items-center">
+                        <span class="text-muted">ทิปพนักงาน (Tip)</span>
+                        <div class="input-group input-group-sm w-50">
+                            <input type="number" id="tip-input" class="form-control text-end" value="0">
+                            <span class="input-group-text bg-light">฿</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mb-3 align-items-center">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" id="use-package-checkbox" checked>
                             <label class="form-check-label text-muted" for="use-package-checkbox">ตัดสิทธิ์แพ็กเกจที่ลูกค้ามีอัตโนมัติ</label>
@@ -472,6 +480,7 @@
     const packageBalanceHintEl = document.getElementById('package-balance-hint');
     const staffSelectEl = document.getElementById('staff-select');
     const discountInputEl = document.getElementById('discount-input');
+    const tipInputEl = document.getElementById('tip-input');
     const checkoutBtn = document.getElementById('checkout-btn');
     const bookingBannerEl = document.getElementById('booking-context-banner');
     const bookingBannerTextEl = document.getElementById('booking-context-text');
@@ -695,7 +704,8 @@
     function calculate() {
         const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
         const discount = parseFloat(discountInputEl.value) || 0;
-        const total = Math.max(0, subtotal - discount);
+        const tip = parseFloat(tipInputEl.value) || 0;
+        const total = Math.max(0, subtotal - discount) + tip;
 
         document.getElementById('subtotal').innerText = subtotal.toLocaleString() + ' ฿';
         document.getElementById('grand-total').innerText = total.toLocaleString() + ' ฿';
@@ -888,6 +898,7 @@
             customer_id: getSelectedCustomerId(),
             staff_id: staffSelectEl.value ? Number(staffSelectEl.value) : null,
             discount_amount: parseFloat(discountInputEl.value) || 0,
+            tip_amount: parseFloat(tipInputEl.value) || 0,
             payment_method: getActivePaymentMethod(),
             use_package: document.getElementById('use-package-checkbox') ? document.getElementById('use-package-checkbox').checked : true,
             items: cart.map(item => ({
@@ -1075,6 +1086,9 @@
 
     if (discountInputEl) {
         discountInputEl.addEventListener('input', calculate);
+    }
+    if (tipInputEl) {
+        tipInputEl.addEventListener('input', calculate);
     }
 
     if (customerNameInputEl) {

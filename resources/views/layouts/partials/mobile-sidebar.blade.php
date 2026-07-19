@@ -75,6 +75,13 @@
                 'title' => 'หมอนวด',
                 'subtitle' => $isAdminMobileSidebar ? 'จัดการข้อมูลหมอนวด' : 'ดูข้อมูลหมอนวด',
             ],
+            [
+                'route' => 'masseuse.shifts',
+                'active' => ['masseuse.shifts*'],
+                'icon' => 'bi-calendar-check',
+                'title' => 'ตารางงาน',
+                'subtitle' => 'จัดการตารางงานหมอนวด',
+            ],
         ];
 
         if ($isAdminMobileSidebar) {

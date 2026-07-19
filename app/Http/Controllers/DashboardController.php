@@ -30,8 +30,8 @@ class DashboardController extends Controller
         }
 
         if ($role === 'cashier') {
-            return view('dashboard.cashier', [
-                'stats' => $this->dashboardService->getCashierDashboardData($user, $branchId),
+            return view('dashboard', [
+                'stats' => $this->dashboardService->getDashboardStats($user, $branchId, (string) request()->query('range', 'today')),
             ]);
         }
 

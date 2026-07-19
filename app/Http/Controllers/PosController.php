@@ -30,6 +30,7 @@ class PosController extends Controller
             'customer_id' => 'nullable|integer|exists:customers,id',
             'staff_id' => 'nullable|integer|exists:masseuses,id',
             'discount_amount' => 'nullable|numeric|min:0',
+            'tip_amount' => 'nullable|numeric|min:0',
             'payment_method' => 'required|string|in:cash,transfer,card,credit_card,package_redeem',
             'items' => 'required|array|min:1',
             'items.*.type' => 'required|string|in:service,product,package',

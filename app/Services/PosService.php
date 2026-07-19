@@ -54,6 +54,7 @@ class PosService
         $customerId = isset($payload['customer_id']) && $payload['customer_id'] !== null ? (int) $payload['customer_id'] : null;
         $staffId = isset($payload['staff_id']) && $payload['staff_id'] !== null ? (int) $payload['staff_id'] : null;
         $discountAmount = isset($payload['discount_amount']) ? (float) $payload['discount_amount'] : 0.0;
+        $tipAmount = isset($payload['tip_amount']) ? (float) $payload['tip_amount'] : 0.0;
         $paymentMethod = $this->normalizePaymentMethod((string) ($payload['payment_method'] ?? 'cash'));
         $usePackage = isset($payload['use_package']) ? (bool) $payload['use_package'] : true; // Default to true for backward compatibility
         $bookingContext = isset($payload['booking_context']) && is_array($payload['booking_context'])
@@ -76,6 +77,7 @@ class PosService
             $staffId,
             $customerId,
             $discountAmount,
+            $tipAmount,
             $paymentMethod,
             $usePackage,
             $bookingContext
@@ -83,10 +85,11 @@ class PosService
             $normalized = $this->normalizeCartItems($branchId, $items, $staffId, $customerId, $usePackage);
             $normalizedItems = $normalized['items'];
             $discount = max(0.0, $discountAmount);
+            $tip = max(0.0, $tipAmount);
             $subtotal = array_reduce($normalizedItems, static function (float $carry, array $item): float {
                 return $carry + (float) $item['line_total'];
             }, 0.0);
-            $grandTotal = max(0.0, $subtotal - $discount);
+            $grandTotal = max(0.0, $subtotal - $discount) + $tip;
 
             $finalPaymentMethod = $paymentMethod;
             if ($normalized['has_package_redemption'] && $grandTotal <= 0.0) {
@@ -100,6 +103,7 @@ class PosService
                 'customer_id' => $customerId,
                 'total_amount' => $subtotal,
                 'discount_amount' => $discount,
+                'tip_amount' => $tip,
                 'grand_total' => $grandTotal,
                 'payment_method' => $finalPaymentMethod,
                 'status' => 'paid',

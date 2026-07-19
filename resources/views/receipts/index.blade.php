@@ -203,6 +203,12 @@
                         <span class="text-muted">ส่วนลด</span>
                         <span>${formatBaht(receipt.discount_amount)}</span>
                     </div>
+                    ${parseFloat(receipt.tip_amount) > 0 ? `
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted">ทิปพนักงาน (Tip)</span>
+                        <span>${formatBaht(receipt.tip_amount)}</span>
+                    </div>
+                    ` : ''}
                     <div class="d-flex justify-content-between fw-bold fs-5 text-primary mt-1">
                         <span>ยอดสุทธิ</span>
                         <span>${formatBaht(receipt.grand_total)}</span>

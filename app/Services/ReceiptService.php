@@ -354,7 +354,6 @@ class ReceiptService
                 ->where('id', $orderId)
                 ->update([
                     'status' => 'voided',
-                    'updated_at' => now(),
                 ]);
 
             // อัปเดตสถานะคิวจองที่เชื่อมโยงกับบิลนี้ให้เป็น cancelled
