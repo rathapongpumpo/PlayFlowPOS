@@ -92,6 +92,31 @@ class CommissionConfigController extends Controller
         return back()->with('success', 'บันทึกการตั้งค่าคอมมิชชันเรียบร้อยแล้ว');
     }
 
+    public function update(Request $request, $id)
+    {
+        $branchId = $this->branchContext->resolveAuthorizedBranchId($request->user());
+
+        $request->validate([
+            'type' => 'required|in:fixed,percent',
+            'value' => 'required|numeric|min:0',
+            'deduct_cost' => 'nullable|numeric|min:0',
+        ]);
+
+        $query = DB::table('commission_configs')->where('id', $id);
+        
+        if (Schema::hasColumn('commission_configs', 'branch_id')) {
+            $query->where('branch_id', $branchId);
+        }
+
+        $query->update([
+            'type' => (string) $request->type,
+            'value' => (float) $request->value,
+            'deduct_cost' => $request->deduct_cost !== null ? (float) $request->deduct_cost : 0,
+        ]);
+
+        return back()->with('success', 'อัปเดตการตั้งค่าคอมมิชชันเรียบร้อยแล้ว');
+    }
+
     public function destroy(Request $request, $id)
     {
         $branchId = $this->branchContext->resolveAuthorizedBranchId($request->user());

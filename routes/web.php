@@ -79,6 +79,7 @@ Route::middleware(['auth', 'shop.access'])->group(function (): void {
         Route::delete('/masseuse/{staffId}', 'MasseuseController@destroy')->name('masseuse.destroy');
         Route::get('/masseuse/shifts', 'MasseuseShiftController@index')->name('masseuse.shifts');
         Route::post('/masseuse/shifts', 'MasseuseShiftController@store')->name('masseuse.shifts.store');
+        Route::put('/masseuse/shifts/{shiftId}', 'MasseuseShiftController@update')->name('masseuse.shifts.update');
         Route::delete('/masseuse/shifts/{shiftId}', 'MasseuseShiftController@destroy')->name('masseuse.shifts.destroy');
 
         // Store Operations (Open/Close)
@@ -114,6 +115,7 @@ Route::middleware(['auth', 'shop.access'])->group(function (): void {
         // โซนจัดการการตั้งค่าระบบ (Admin Only)
         Route::get('/admin/commission', 'CommissionConfigController@index')->name('admin.commission.index');
         Route::post('/admin/commission', 'CommissionConfigController@store')->name('admin.commission.store');
+        Route::put('/admin/commission/{id}', 'CommissionConfigController@update')->name('admin.commission.update');
         Route::delete('/admin/commission/{id}', 'CommissionConfigController@destroy')->name('admin.commission.destroy');
 
         // สาขา (Branch Management)

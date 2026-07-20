@@ -3,15 +3,12 @@
 <head>
     @php
         $fontAwesomeCssVersion = @filemtime(public_path('vendor/fontawesome/css/all.min.css')) ?: time();
-        $iconBridgeCssVersion = @filemtime(public_path('css/icon-bridge.css')) ?: time();
-        $iconBridgeJsVersion = @filemtime(public_path('js/icon-bridge.js')) ?: time();
     @endphp
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'PlayFlow Spa POS')</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}?v={{ $fontAwesomeCssVersion }}">
-    <link rel="stylesheet" href="{{ asset('css/icon-bridge.css') }}?v={{ $iconBridgeCssVersion }}">
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="{{ asset('img/icon.png') }}">
     <style>
@@ -483,7 +480,6 @@
     <div id="pf-toast-container" class="pf-toast-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ asset('js/icon-bridge.js') }}?v={{ $iconBridgeJsVersion }}"></script>
     <script>
         (function () {
             if (typeof window.bootstrap !== 'undefined') return;

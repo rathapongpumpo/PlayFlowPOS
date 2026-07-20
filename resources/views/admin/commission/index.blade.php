@@ -145,6 +145,41 @@
         margin-bottom: 1rem;
     }
 
+    .btn-action-delete,
+    .btn-action-edit {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        font-size: 1rem;
+    }
+
+    .btn-action-delete {
+        background: rgba(240, 68, 56, 0.1);
+        color: #f04438;
+    }
+    
+    .btn-action-edit {
+        background: rgba(31, 115, 224, 0.1);
+        color: #1f73e0;
+    }
+
+    .btn-action-delete:hover {
+        background: #f04438;
+        color: white;
+        transform: translateY(-2px);
+    }
+    
+    .btn-action-edit:hover {
+        background: #1f73e0;
+        color: white;
+        transform: translateY(-2px);
+    }
+
     .commission-page .empty-state h6 {
         color: #6b8ab0;
         font-weight: 600;
@@ -315,12 +350,18 @@
                                         @endif
                                     </td>
                                     <td class="text-end">
-                                        <form action="{{ route('admin.commission.destroy', $config->id) }}" method="POST" onsubmit="return confirm('ยืนยันการลบรายการนี้?')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-2" title="ลบ">
-                                                <i class="fa-solid fa-trash-can me-1"></i>ลบ
+                                        <div class="d-inline-flex gap-2">
+                                            <button type="button" class="btn-action-edit" title="แก้ไข"
+                                                    onclick="pfOpenEditCommissionModal('{{ $config->id }}', '{{ $config->item_type }}', '{{ $config->item_id }}', '{{ $config->type }}', '{{ $config->value }}', '{{ $config->deduct_cost }}')">
+                                                <i class="fa-solid fa-pen-to-square"></i>
                                             </button>
-                                        </form>
+                                            <form action="{{ route('admin.commission.destroy', $config->id) }}" method="POST" onsubmit="return confirm('ยืนยันการลบรายการนี้?')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="btn-action-delete" title="ลบ">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -345,12 +386,18 @@
                                     <span class="badge-type {{ $typeBadge[0] }} mb-1 d-inline-block">{{ $typeBadge[1] }}</span>
                                     <div class="card-title">{{ $config->item_name ?? '-' }}</div>
                                 </div>
-                                <form action="{{ route('admin.commission.destroy', $config->id) }}" method="POST" onsubmit="return confirm('ยืนยันการลบรายการนี้?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-2">
-                                        <i class="fa-solid fa-trash-can"></i>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn-action-edit" title="แก้ไข"
+                                            onclick="pfOpenEditCommissionModal('{{ $config->id }}', '{{ $config->item_type }}', '{{ $config->item_id }}', '{{ $config->type }}', '{{ $config->value }}', '{{ $config->deduct_cost }}')">
+                                        <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                </form>
+                                    <form action="{{ route('admin.commission.destroy', $config->id) }}" method="POST" onsubmit="return confirm('ยืนยันการลบรายการนี้?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn-action-delete" title="ลบ">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </div>
                             <div class="card-meta">
                                 <div class="meta-item">
@@ -439,6 +486,61 @@
         </div>
     </div>
 </div>
+{{-- ═══ Modal: แก้ไขค่าคอมมิชชัน ═══ --}}
+<div class="modal fade pf-modal commission-page" id="editCommissionModal" tabindex="-1" aria-labelledby="editCommissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="editCommissionModalLabel">
+                    <i class="fa-solid fa-pen-to-square me-2"></i>แก้ไขรายการค่าคอมมิชชัน
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editCommissionForm" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">ประเภทไอเทม</label>
+                            <input type="text" id="edit_item_type_display" class="form-control" readonly>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">ชื่อรายการ</label>
+                            <input type="text" id="edit_item_id_display" class="form-control" readonly>
+                        </div>
+                        <div class="col-12"><hr class="my-1"></div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">รูปแบบการจ่าย</label>
+                            <select name="type" id="edit_type" class="form-select">
+                                <option value="fixed">เงินก้อน (฿)</option>
+                                <option value="percent">เปอร์เซ็นต์ (%)</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">มูลค่าตอบแทน <span class="text-danger">*</span></label>
+                            <input type="number" step="0.01" min="0" name="value" id="edit_value" class="form-control" placeholder="0.00" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">ต้นทุนหักออก (฿)</label>
+                            <input type="number" step="0.01" min="0" name="deduct_cost" id="edit_deduct_cost" class="form-control" placeholder="0.00">
+                            <div class="form-text">
+                                <i class="fa-solid fa-circle-info me-1 text-primary"></i>
+                                กรณีคิดเป็น % จะหักยอดนี้ออกจากราคาขายก่อนคำนวณ
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn gradient-btn rounded-pill px-4">
+                        <i class="fa-solid fa-check me-1"></i>บันทึกข้อมูล
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -463,6 +565,44 @@
     function pfOpenCommissionModal() {
         var modalEl = document.getElementById('addCommissionModal');
         if (!modalEl) return;
+
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            var bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            bsModal.show();
+        } else {
+            modalEl.classList.add('show');
+            modalEl.style.display = 'block';
+            modalEl.removeAttribute('aria-hidden');
+            modalEl.setAttribute('aria-modal', 'true');
+            document.body.classList.add('modal-open');
+
+            var backdrop = document.createElement('div');
+            backdrop.className = 'modal-backdrop fade show pf-fallback';
+            document.body.appendChild(backdrop);
+        }
+    }
+    function pfOpenEditCommissionModal(id, itemType, itemId, type, value, deductCost) {
+        var modalEl = document.getElementById('editCommissionModal');
+        if (!modalEl) return;
+        
+        document.getElementById('editCommissionForm').action = '/admin/commission/' + id;
+        
+        let typeName = '';
+        if (itemType === 'service') typeName = 'บริการ (Service)';
+        else if (itemType === 'product') typeName = 'สินค้า (Product)';
+        else if (itemType === 'package') typeName = 'แพ็กเกจ (Package)';
+        document.getElementById('edit_item_type_display').value = typeName;
+        
+        let itemName = '';
+        if (commissionData[itemType]) {
+            const item = commissionData[itemType].find(i => i.id == itemId);
+            if (item) itemName = item.name;
+        }
+        document.getElementById('edit_item_id_display').value = itemName || ('ID: ' + itemId);
+        
+        document.getElementById('edit_type').value = type;
+        document.getElementById('edit_value').value = value;
+        document.getElementById('edit_deduct_cost').value = deductCost;
 
         if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
             var bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);

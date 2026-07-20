@@ -28,7 +28,7 @@ class MasseuseShiftController extends Controller
             ->where('staff_shifts.branch_id', $branchId)
             ->whereMonth('staff_shifts.shift_date', $month)
             ->whereYear('staff_shifts.shift_date', $year)
-            ->select('staff_shifts.*', 'masseuses.nickname', 'masseuses.full_name', 'users.daily_guarantee')
+            ->select('staff_shifts.*', 'masseuses.nickname', 'masseuses.full_name')
             ->get();
             
         // คำนวณค่าคอมมิชชั่นรายวัน สำหรับกะงานแต่ละวัน
@@ -39,7 +39,7 @@ class MasseuseShiftController extends Controller
                 ->whereDate('calculated_at', $shift->shift_date)
                 ->sum('amount');
                 
-            $guarantee = (float)($shift->daily_guarantee ?? 0);
+            $guarantee = (float)($shift->guarantee_amount ?? 0);
             $shift->guarantee_topup = max(0, $guarantee - $shift->earned_commission);
         }
             
@@ -66,9 +66,30 @@ class MasseuseShiftController extends Controller
             'shift_date' => $request->shift_date,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
+            'guarantee_amount' => $request->guarantee_amount ?? 0,
         ]);
 
         return back()->with('success', 'บันทึกตารางงานสำเร็จ');
+    }
+
+    public function update(Request $request, $shiftId)
+    {
+        $branchId = $this->branchService->resolveAuthorizedBranchId(auth()->user());
+        $request->validate([
+            'start_time' => 'required',
+            'end_time' => 'required'
+        ]);
+
+        DB::table('staff_shifts')
+            ->where('id', $shiftId)
+            ->where('branch_id', $branchId)
+            ->update([
+                'start_time' => $request->start_time,
+                'end_time' => $request->end_time,
+                'guarantee_amount' => $request->guarantee_amount ?? 0,
+            ]);
+
+        return back()->with('success', 'แก้ไขตารางงานสำเร็จ');
     }
 
     public function destroy($shiftId)

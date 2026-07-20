@@ -161,23 +161,39 @@
         font-size: 0.85rem;
     }
 
-    .btn-action-delete {
-        width: 36px;
-        height: 36px;
+    .btn-action-delete,
+    .btn-action-edit {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        border: none;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 10px;
+        transition: all 0.2s;
+        font-size: 1rem;
+    }
+
+    .btn-action-delete {
         background: var(--sp-danger-light);
         color: var(--sp-danger);
-        border: none;
-        transition: all 0.2s;
+    }
+    
+    .btn-action-edit {
+        background: var(--sp-primary-light);
+        color: var(--sp-primary);
     }
 
     .btn-action-delete:hover {
         background: var(--sp-danger);
         color: white;
-        transform: scale(1.05);
+        transform: translateY(-2px);
+    }
+    
+    .btn-action-edit:hover {
+        background: var(--sp-primary);
+        color: white;
+        transform: translateY(-2px);
     }
 
     .empty-state {
@@ -332,7 +348,7 @@
                             </td>
                             <td class="text-center">
                                 <div class="fw-bold text-success">{{ number_format($shift->earned_commission, 2) }} ฿</div>
-                                <div class="text-muted small">/ {{ number_format($shift->daily_guarantee ?? 0, 2) }} ฿</div>
+                                <div class="text-muted small">/ {{ number_format($shift->guarantee_amount ?? 0, 2) }} ฿</div>
                             </td>
                             <td class="text-center">
                                 @if($shift->guarantee_topup > 0)
@@ -344,13 +360,26 @@
                                 @endif
                             </td>
                             <td class="text-end pe-4">
-                                <form action="{{ route('masseuse.shifts.destroy', $shift->id) }}" method="POST" class="d-inline" onsubmit="return confirm('ยืนยันการลบตารางงานนี้?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn-action-delete" title="ลบตารางงาน">
-                                        <i class="fa-solid fa-trash-can"></i>
+                                <div class="d-inline-flex gap-2">
+                                    <button type="button" 
+                                            class="btn-action-edit edit-shift-btn" 
+                                            title="แก้ไขตารางงาน"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editShiftModal"
+                                            data-id="{{ $shift->id }}"
+                                            data-start="{{ \Carbon\Carbon::parse($shift->start_time)->format('H:i') }}"
+                                            data-end="{{ \Carbon\Carbon::parse($shift->end_time)->format('H:i') }}"
+                                            data-guarantee="{{ $shift->guarantee_amount ?? 0 }}">
+                                        <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                </form>
+                                    <form action="{{ route('masseuse.shifts.destroy', $shift->id) }}" method="POST" class="d-inline" onsubmit="return confirm('ยืนยันการลบตารางงานนี้?');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn-action-delete" title="ลบตารางงาน">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -406,18 +435,71 @@
                     </div>
                     
                     <div class="row">
-                        <div class="col-6 mb-2">
+                        <div class="col-6 mb-3">
                             <label class="form-label">
                                 <i class="fa-regular fa-clock text-primary me-1"></i> เวลาเริ่ม
                             </label>
                             <input type="time" name="start_time" class="form-control" value="10:00" required>
                         </div>
-                        <div class="col-6 mb-2">
+                        <div class="col-6 mb-3">
                             <label class="form-label">
                                 <i class="fa-solid fa-clock text-primary me-1"></i> เวลาจบ
                             </label>
                             <input type="time" name="end_time" class="form-control" value="22:00" required>
                         </div>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label">
+                            <i class="fa-solid fa-hand-holding-dollar text-primary me-1"></i> ยอดการันตี/วัน (บาท)
+                        </label>
+                        <input type="number" step="0.01" name="guarantee_amount" class="form-control" value="0.00" min="0" placeholder="0.00">
+                        <div class="form-text text-muted small">หากใส่เป็น 0 หมายถึงไม่มีการบวกยอดส่วนต่างให้</div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-light px-4 py-2 rounded-pill fw-medium" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary px-4 py-2 rounded-pill fw-medium shadow-sm" style="background: linear-gradient(135deg, var(--sp-primary) 0%, #468ef5 100%); border: none;">
+                        <i class="fa-solid fa-floppy-disk me-1"></i> บันทึกข้อมูล
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Edit Shift Modal -->
+<div class="modal fade custom-modal" id="editShiftModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fa-solid fa-pen-to-square me-2"></i> แก้ไขกะการทำงาน</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editShiftForm" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">
+                                <i class="fa-regular fa-clock text-primary me-1"></i> เวลาเริ่ม
+                            </label>
+                            <input type="time" name="start_time" id="edit_start_time" class="form-control" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">
+                                <i class="fa-solid fa-clock text-primary me-1"></i> เวลาจบ
+                            </label>
+                            <input type="time" name="end_time" id="edit_end_time" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-2">
+                        <label class="form-label">
+                            <i class="fa-solid fa-hand-holding-dollar text-primary me-1"></i> ยอดการันตี/วัน (บาท)
+                        </label>
+                        <input type="number" step="0.01" name="guarantee_amount" id="edit_guarantee_amount" class="form-control" min="0" placeholder="0.00">
+                        <div class="form-text text-muted small">หากใส่เป็น 0 หมายถึงไม่มีการบวกยอดส่วนต่างให้</div>
                     </div>
                 </div>
                 <div class="modal-footer justify-content-between">
@@ -431,3 +513,26 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const editBtns = document.querySelectorAll('.edit-shift-btn');
+    const editForm = document.getElementById('editShiftForm');
+    
+    editBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const id = this.dataset.id;
+            const start = this.dataset.start;
+            const end = this.dataset.end;
+            const guarantee = this.dataset.guarantee;
+            
+            editForm.action = `/masseuse/shifts/${id}`;
+            document.getElementById('edit_start_time').value = start;
+            document.getElementById('edit_end_time').value = end;
+            document.getElementById('edit_guarantee_amount').value = guarantee;
+        });
+    });
+});
+</script>
+@endpush

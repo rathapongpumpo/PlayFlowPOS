@@ -139,33 +139,48 @@
         gap: 0.5rem;
     }
 
-    .customers-action-btn {
+    .btn-action-icon {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 0.35rem;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        border-radius: 10px;
+        border: none;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 1rem;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
     }
 
-    .customers-action-btn .bi {
-        font-size: 0.9rem;
+    .btn-action-icon:hover {
+        transform: translateY(-2px);
     }
 
-    .customers-action-btn .customers-action-text {
-        line-height: 1;
+    .btn-edit-icon:hover {
+        background: linear-gradient(135deg, rgba(31,115,224,0.1) 0%, rgba(31,115,224,0.2) 100%);
+        color: #1f73e0;
+        box-shadow: inset 0 0 0 1px rgba(31,115,224,0.2), 0 4px 12px rgba(31,115,224,0.15);
     }
 
-    .customers-action-group .edit-customer-btn .bi,
-    .customers-action-group .history-customer-btn .bi {
-        display: none;
+    .btn-history-icon:hover {
+        background: linear-gradient(135deg, rgba(20,184,154,0.1) 0%, rgba(20,184,154,0.2) 100%);
+        color: #14b89a;
+        box-shadow: inset 0 0 0 1px rgba(20,184,154,0.2), 0 4px 12px rgba(20,184,154,0.15);
     }
 
-    .customers-action-group form[data-role="delete-customer"] .customers-action-text {
-        display: none;
+    .btn-topup-icon:hover {
+        background: linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(245,158,11,0.2) 100%);
+        color: #d97706;
+        box-shadow: inset 0 0 0 1px rgba(245,158,11,0.2), 0 4px 12px rgba(245,158,11,0.15);
     }
 
-    .customers-action-group form[data-role="delete-customer"] .btn {
-        padding-left: 0.6rem !important;
-        padding-right: 0.6rem !important;
+    .btn-delete-icon:hover {
+        background: linear-gradient(135deg, rgba(239,68,68,0.1) 0%, rgba(239,68,68,0.2) 100%);
+        color: #dc2626;
+        box-shadow: inset 0 0 0 1px rgba(239,68,68,0.2), 0 4px 12px rgba(239,68,68,0.15);
     }
 
     @media (max-width: 767.98px) {
@@ -377,15 +392,6 @@
                                     <div class="text-muted mt-1 membership-next d-none d-md-block">
                                         อีก {{ number_format((float) ($customer['amount_to_next_tier'] ?? 0), 2) }} บาท
                                         ถึง {{ $customer['next_tier_name'] }}
-                                        <form method="POST"
-                                              action="{{ route('customers.destroy', ['customerId' => $customer['id']]) }}"
-                                              onsubmit="return confirm(@js('ยืนยันการลบลูกค้า ' . $customer['name'] . ' ?'))">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
-                                                ลบ
-                                            </button>
-                                        </form>
                                     </div>
                                     @elseif(!empty($customer['is_top_tier']))
                                     <div class="text-success mt-1 membership-next d-none d-md-block">ถึงระดับสูงสุดแล้ว</div>
@@ -404,23 +410,36 @@
                                 <td class="text-end">
                                     <div class="d-inline-flex gap-2 customers-action-group">
                                         <button type="button"
-                                                class="btn btn-sm btn-outline-primary rounded-pill px-3 edit-customer-btn"
+                                                class="btn btn-action-icon btn-edit-icon edit-customer-btn"
                                                 data-update-url="{{ route('customers.update', ['customerId' => $customer['id']]) }}"
-                                                data-customer='@json($customerPayload)'>
-                                            แก้ไข
+                                                data-customer='@json($customerPayload)'
+                                                title="แก้ไขข้อมูล">
+                                            <i class="fa-solid fa-pen-to-square"></i>
                                         </button>
                                         <button type="button"
-                                                class="btn btn-sm btn-outline-info rounded-pill px-3 history-customer-btn"
+                                                class="btn btn-action-icon btn-history-icon history-customer-btn"
                                                 data-customer-id="{{ $customer['id'] }}"
-                                                data-customer-name="{{ $customer['name'] }}">
-                                            ดูประวัติ
+                                                data-customer-name="{{ $customer['name'] }}"
+                                                title="ดูประวัติ">
+                                            <i class="fa-solid fa-clock-rotate-left"></i>
                                         </button>
                                         <button type="button"
-                                                class="btn btn-sm btn-outline-success rounded-pill px-3 topup-customer-btn"
+                                                class="btn btn-action-icon btn-topup-icon topup-customer-btn"
                                                 data-customer-id="{{ $customer['id'] }}"
-                                                data-customer-name="{{ $customer['name'] }}">
-                                            <i class="bi bi-cash-coin me-1"></i> เติมเงิน
+                                                data-customer-name="{{ $customer['name'] }}"
+                                                title="เติมเงิน">
+                                            <i class="fa-solid fa-wallet"></i>
                                         </button>
+                                        <form method="POST"
+                                              action="{{ route('customers.destroy', ['customerId' => $customer['id']]) }}"
+                                              onsubmit="return confirm(@js('ยืนยันการลบลูกค้า ' . $customer['name'] . ' ?'))"
+                                              class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-action-icon btn-delete-icon" title="ลบลูกค้า">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
@@ -798,127 +817,6 @@
         });
     });
 
-    document.querySelectorAll('.customers-action-group').forEach((group) => {
-        if (!group || group.querySelector('form[data-role="delete-customer"]')) {
-            return;
-        }
-
-        const historyButton = group.querySelector('.history-customer-btn');
-        const customerId = Number(historyButton?.dataset.customerId || 0);
-        const customerName = String(historyButton?.dataset.customerName || '').trim();
-
-        if (!customerId) {
-            return;
-        }
-
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = resolveTemplateUrl(deleteUrlTemplate, customerId);
-        form.dataset.role = 'delete-customer';
-        form.addEventListener('submit', (event) => {
-            const confirmed = window.confirm(`ยืนยันการลบลูกค้า ${customerName || '-'} ?`);
-            if (!confirmed) {
-                event.preventDefault();
-            }
-        });
-
-        const tokenInput = document.createElement('input');
-        tokenInput.type = 'hidden';
-        tokenInput.name = '_token';
-        tokenInput.value = csrfToken;
-
-        const methodInput = document.createElement('input');
-        methodInput.type = 'hidden';
-        methodInput.name = '_method';
-        methodInput.value = 'DELETE';
-
-        const button = document.createElement('button');
-        button.type = 'submit';
-        button.className = 'btn btn-sm btn-outline-danger rounded-pill px-3';
-        button.textContent = 'ลบ';
-
-        form.appendChild(tokenInput);
-        form.appendChild(methodInput);
-        form.appendChild(button);
-        group.appendChild(form);
-    });
-
-    document.querySelectorAll('.membership-next form').forEach((form) => form.remove());
-
-    document.querySelectorAll('.customers-action-group').forEach((group) => {
-        if (!group) {
-            return;
-        }
-
-        const editButton = group.querySelector('.edit-customer-btn');
-        const historyButton = group.querySelector('.history-customer-btn');
-        const existingDeleteForm = group.querySelector('form[data-role="delete-customer"]');
-        const customerId = Number(historyButton?.dataset.customerId || 0);
-        const customerName = String(historyButton?.dataset.customerName || '').trim();
-
-        const decorateActionButton = (button, iconClass, fallbackLabel) => {
-            if (!button) {
-                return;
-            }
-
-            button.classList.add('customers-action-btn');
-            const label = String(button.textContent || '').trim() || fallbackLabel;
-            button.textContent = '';
-
-            const icon = document.createElement('i');
-            icon.className = iconClass;
-
-            const text = document.createElement('span');
-            text.className = 'customers-action-text';
-            text.textContent = label;
-
-            button.appendChild(icon);
-            button.appendChild(text);
-        };
-
-        decorateActionButton(editButton, 'bi bi-pencil-square', 'แก้ไข');
-        decorateActionButton(historyButton, 'bi bi-clock-history', 'ประวัติ');
-
-        if (!customerId) {
-            return;
-        }
-
-        if (existingDeleteForm) {
-            existingDeleteForm.remove();
-        }
-
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = resolveTemplateUrl(deleteUrlTemplate, customerId);
-        form.dataset.role = 'delete-customer';
-        form.addEventListener('submit', (event) => {
-            const confirmed = window.confirm(`ยืนยันการลบลูกค้า ${customerName || '-'} ?`);
-            if (!confirmed) {
-                event.preventDefault();
-            }
-        });
-
-        const tokenInput = document.createElement('input');
-        tokenInput.type = 'hidden';
-        tokenInput.name = '_token';
-        tokenInput.value = csrfToken;
-
-        const methodInput = document.createElement('input');
-        methodInput.type = 'hidden';
-        methodInput.name = '_method';
-        methodInput.value = 'DELETE';
-
-        const button = document.createElement('button');
-        button.type = 'submit';
-        button.className = 'btn btn-sm btn-outline-danger rounded-pill px-3 customers-action-btn';
-
-        form.appendChild(tokenInput);
-        form.appendChild(methodInput);
-        form.appendChild(button);
-        group.appendChild(form);
-
-        decorateActionButton(button, 'bi bi-trash', 'ลบ');
-    });
 
     if (oldForm === 'add_customer') {
         showModal(addCustomerModalEl);
