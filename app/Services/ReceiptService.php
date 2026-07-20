@@ -349,6 +349,62 @@ class ReceiptService
                 }
             }
 
+            // คืนสต๊อกสินค้า (สำหรับสินค้า)
+            if (\Illuminate\Support\Facades\Schema::hasTable('product_stock_transactions')) {
+                $products = DB::table('order_items')
+                    ->where('order_id', $orderId)
+                    ->where('item_type', 'product')
+                    ->get();
+                foreach ($products as $item) {
+                    $stockService = app(\App\Services\ProductService::class);
+                    $stockService->addStock((int)$order->branch_id, (int)$item->item_id, (int)$item->qty, null, 'คืนสินค้าจากการ Void บิล (#' . $orderNo . ')');
+                }
+            }
+
+            // คืนเงิน Wallet กรณีชำระด้วย Wallet
+            if ($order->payment_method === 'wallet' && $order->customer_id) {
+                $walletService = app(\App\Services\WalletService::class);
+                $walletService->topUp((int)$order->branch_id, (int)$order->customer_id, (float)$order->grand_total, 'คืนเงินจากการ Void บิล (#' . $orderNo . ')');
+            }
+
+            // จัดการแต้มสะสม
+            $pointService = app(\App\Services\PointService::class);
+            if ($order->customer_id && \Illuminate\Support\Facades\Schema::hasColumn('orders', 'points_earned')) {
+                // คืนแต้มที่หักไป (points_redeemed)
+                if ($order->points_redeemed > 0) {
+                    $pointService->earnPoints((int)$order->branch_id, (int)$order->customer_id, (int)$order->points_redeemed, $orderId, 'คืนแต้มจากการ Void บิล (#' . $orderNo . ')');
+                }
+                // ลบแต้มที่ได้รับ (points_earned)
+                if ($order->points_earned > 0) {
+                    $pointService->redeemPoints((int)$order->branch_id, (int)$order->customer_id, (int)$order->points_earned, $orderId, 'ยกเลิกแต้มที่ได้รับจากการ Void บิล (#' . $orderNo . ')');
+                }
+            }
+
+            // จัดการแสตมป์
+            if ($order->customer_id && \Illuminate\Support\Facades\Schema::hasTable('customer_stamps')) {
+                $stamps = DB::table('customer_stamps')
+                    ->where('order_id', $orderId)
+                    ->where('customer_id', $order->customer_id)
+                    ->get();
+                    
+                foreach($stamps as $stamp) {
+                    if ($stamp->stamps_earned > 0) {
+                        DB::table('customers')
+                            ->where('id', $order->customer_id)
+                            ->decrement('total_stamps', $stamp->stamps_earned);
+                    }
+                    if ($stamp->stamps_redeemed > 0) {
+                        DB::table('customers')
+                            ->where('id', $order->customer_id)
+                            ->increment('total_stamps', $stamp->stamps_redeemed);
+                    }
+                }
+                
+                DB::table('customer_stamps')
+                    ->where('order_id', $orderId)
+                    ->delete();
+            }
+
             // เปลี่ยนสถานะบิลเป็น voided
             DB::table('orders')
                 ->where('id', $orderId)

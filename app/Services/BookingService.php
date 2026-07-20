@@ -318,6 +318,12 @@ class BookingService
 
                 return (bool) ($staff['isWorkingToday'] ?? false);
             })
+            ->sort(function ($a, $b) {
+                if ($a['isWorkingToday'] == $b['isWorkingToday']) {
+                    return $a['id'] <=> $b['id'];
+                }
+                return $a['isWorkingToday'] ? -1 : 1;
+            })
             ->values()
             ->all();
     }

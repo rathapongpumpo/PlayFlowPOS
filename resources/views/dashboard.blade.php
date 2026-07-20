@@ -181,7 +181,7 @@
 
     .dashboard-page .focus-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 0.9rem;
     }
 
@@ -275,7 +275,7 @@
         position: relative;
         z-index: 1;
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 0.9rem;
     }
 
@@ -766,6 +766,28 @@
                             <span>อัปเดต {{ $stats['last_sync'] ?? '-' }}</span>
                         </div>
                     </article>
+
+                    <article class="mini-stat-card">
+                        <div class="mini-stat-head">
+                            <div class="mini-stat-label">ลูกค้าใหม่วันนี้</div>
+                            <span class="mini-stat-icon" style="background: rgba(46, 204, 113, 0.15); color: #27ae60;"><i class="fa-solid fa-user-plus"></i></span>
+                        </div>
+                        <div class="mini-stat-value">{{ number_format($stats['new_customers_today'] ?? 0) }} คน</div>
+                        <div class="mini-stat-meta">
+                            <span class="trend-pill is-up"><i class="fa-solid fa-star"></i> ลูกค้าใหม่ที่มาใช้บริการ</span>
+                        </div>
+                    </article>
+
+                    <article class="mini-stat-card">
+                        <div class="mini-stat-head">
+                            <div class="mini-stat-label">ลูกค้าเก่าวันนี้</div>
+                            <span class="mini-stat-icon" style="background: rgba(52, 152, 219, 0.15); color: #2980b9;"><i class="fa-solid fa-user-clock"></i></span>
+                        </div>
+                        <div class="mini-stat-value">{{ number_format($stats['old_customers_today'] ?? 0) }} คน</div>
+                        <div class="mini-stat-meta">
+                            <span class="trend-pill is-flat"><i class="fa-solid fa-rotate-right"></i> ลูกค้าเก่ากลับมาใช้บริการ</span>
+                        </div>
+                    </article>
                 </div>
             </section>
         </div>
@@ -806,6 +828,31 @@
                         </div>
                         <div class="report-metric-value">{{ number_format($monthlySales) }} บ.</div>
                         <div class="report-metric-note">ยอดสะสมตั้งแต่ต้นเดือนจากบิลที่ชำระแล้ว</div>
+                    </article>
+                    
+                    <article class="report-metric" style="background: linear-gradient(145deg, rgba(255, 230, 100, 0.78), rgba(255, 170, 0, 0.72));">
+                        <div class="report-metric-top">
+                            <div class="report-metric-label" style="color: #6d4c00;">กำไรสุทธิ (เดือนนี้)</div>
+                            <span class="report-metric-icon" style="background: #e69d00;"><i class="fa-solid fa-piggy-bank"></i></span>
+                        </div>
+                        <div class="report-metric-value" style="color: #4a3400;">{{ number_format($stats['net_profit'] ?? 0) }} บ.</div>
+                        <div class="report-metric-note" style="color: #8c6200;">หักค่ามือจากยอดขายรายเดือนแล้ว</div>
+                    </article>
+
+                    <article class="report-metric" style="background: linear-gradient(145deg, rgba(160, 100, 255, 0.78), rgba(100, 50, 200, 0.72));">
+                        <div class="report-metric-top">
+                            <div class="report-metric-label" style="color: #3b1b68;">สัดส่วน บริการ/แพ็กเกจ</div>
+                            <span class="report-metric-icon" style="background: #5b28a2;"><i class="fa-solid fa-chart-pie"></i></span>
+                        </div>
+                        <div class="report-metric-value" style="color: #250b4a; font-size: 1.5rem;">
+                            @php
+                                $totalComb = ($stats['today_total_combined_sales'] ?? 0) > 0 ? $stats['today_total_combined_sales'] : 1;
+                                $srvPct = round((($stats['today_service_sales'] ?? 0) / $totalComb) * 100);
+                                $pkgPct = 100 - $srvPct;
+                            @endphp
+                            {{ $srvPct }}% / {{ $pkgPct }}%
+                        </div>
+                        <div class="report-metric-note" style="color: #4b2385;">วันนี้: บ. {{ number_format($stats['today_service_sales'] ?? 0) }} / พ. {{ number_format($stats['today_package_sales'] ?? 0) }}</div>
                     </article>
                 </div>
 

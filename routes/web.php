@@ -57,6 +57,8 @@ Route::middleware(['auth', 'shop.access'])->group(function (): void {
         Route::get('/customers/{customerId}/history', 'CustomerController@history')->name('customers.history');
         Route::put('/customers/{customerId}', 'CustomerController@update')->name('customers.update');
         Route::delete('/customers/{customerId}', 'CustomerController@destroy')->name('customers.destroy');
+        Route::post('/customers/{customerId}/topup', 'CustomerController@topup')->name('customers.topup');
+        Route::get('/crm', 'CrmController@index')->name('crm.index');
         Route::get('/membership-levels', 'MembershipLevelController@index')->name('membership-levels');
         Route::post('/membership-levels', 'MembershipLevelController@store')->name('membership-levels.store');
         Route::put('/membership-levels/{tierId}', 'MembershipLevelController@update')->name('membership-levels.update');
@@ -78,6 +80,16 @@ Route::middleware(['auth', 'shop.access'])->group(function (): void {
         Route::get('/masseuse/shifts', 'MasseuseShiftController@index')->name('masseuse.shifts');
         Route::post('/masseuse/shifts', 'MasseuseShiftController@store')->name('masseuse.shifts.store');
         Route::delete('/masseuse/shifts/{shiftId}', 'MasseuseShiftController@destroy')->name('masseuse.shifts.destroy');
+
+        // Store Operations (Open/Close)
+        Route::get('/operations', 'StoreOperationsController@index')->name('operations.index');
+        Route::post('/operations/open', 'StoreOperationsController@openStore')->name('operations.open');
+        Route::post('/operations/close', 'StoreOperationsController@closeStore')->name('operations.close');
+
+        // Store Assets (Internal stock)
+        Route::get('/store-assets', 'StoreAssetController@index')->name('store-assets.index');
+        Route::post('/store-assets', 'StoreAssetController@store')->name('store-assets.store');
+        Route::post('/store-assets/{id}/adjust', 'StoreAssetController@adjustStock')->name('store-assets.adjust');
         Route::get('/packages', 'PackageController@index')->name('packages');
         Route::post('/packages', 'PackageController@store')->name('packages.store');
         Route::put('/packages/{packageId}', 'PackageController@update')->name('packages.update');

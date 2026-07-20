@@ -344,6 +344,7 @@
                                 <th>ไลน์ไอดี</th>
                                 <th class="membership-col">สมาชิก</th>
                                 <th>จำนวนครั้งใช้บริการ</th>
+                                <th>ยอดคงเหลือ/แต้ม</th>
                                 <th>เข้าล่าสุด</th>
                                 <th class="text-end action-col">จัดการ</th>
                             </tr>
@@ -391,6 +392,14 @@
                                     @endif
                                 </td>
                                 <td>{{ number_format($customer['visit_count']) }} ครั้ง</td>
+                                <td>
+                                    <div class="text-primary fw-bold mb-1">
+                                        <i class="bi bi-wallet2"></i> ฿{{ number_format((float)($customer['wallet_balance'] ?? 0), 2) }}
+                                    </div>
+                                    <div class="text-warning fw-bold small">
+                                        <i class="bi bi-star-fill"></i> {{ number_format((int)($customer['total_points'] ?? 0)) }} pts
+                                    </div>
+                                </td>
                                 <td>{{ $customer['last_visit_at'] ?? '-' }}</td>
                                 <td class="text-end">
                                     <div class="d-inline-flex gap-2 customers-action-group">
@@ -405,6 +414,12 @@
                                                 data-customer-id="{{ $customer['id'] }}"
                                                 data-customer-name="{{ $customer['name'] }}">
                                             ดูประวัติ
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-success rounded-pill px-3 topup-customer-btn"
+                                                data-customer-id="{{ $customer['id'] }}"
+                                                data-customer-name="{{ $customer['name'] }}">
+                                            <i class="bi bi-cash-coin me-1"></i> เติมเงิน
                                         </button>
                                     </div>
                                 </td>
@@ -570,6 +585,47 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="topupCustomerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-success"><i class="bi bi-cash-coin me-2"></i>เติมเงินเข้ากระเป๋า: <span id="topup-customer-name"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="topup-customer-form" action="">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">จำนวนเงินที่ต้องการเติม (บาท) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-currency-bitcoin"></i></span>
+                            <input type="number" name="amount" class="form-control form-control-lg fw-bold text-success" required min="0" step="0.01" value="0">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">โบนัสแถมฟรี (บาท)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="bi bi-gift text-primary"></i></span>
+                            <input type="number" name="bonus" class="form-control form-control-lg fw-bold text-primary" min="0" step="0.01" value="0">
+                        </div>
+                        <div class="form-text">ตัวอย่าง: ลูกค้าจ่าย 5,000 ใส่ช่องบน 5000 ใส่ช่องนี้ 1000 (ลูกค้าจะได้ยอด 6,000)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">หมายเหตุ (Optional)</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="เช่น โปรโมชั่นปีใหม่"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                        <i class="bi bi-check-circle me-1"></i> ยืนยันการเติมเงิน
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -583,6 +639,7 @@
     const openAddCustomerBtn = document.getElementById('open-add-customer-btn');
     const editUpdateUrlTemplate = @json(route('customers.update', ['customerId' => '__ID__']));
     const historyUrlTemplate = @json(route('customers.history', ['customerId' => '__ID__']));
+    const topupUrlTemplate = @json(route('customers.topup', ['customerId' => '__ID__']));
     const deleteUrlTemplate = @json(route('customers.destroy', ['customerId' => '__ID__']));
     const csrfToken = @json(csrf_token());
     const oldForm = @json(old('_form'));
@@ -721,6 +778,23 @@
                 Number(button.dataset.customerId || 0),
                 String(button.dataset.customerName || '')
             );
+        });
+    });
+
+    const topupCustomerModalEl = document.getElementById('topupCustomerModal');
+    const topupCustomerFormEl = document.getElementById('topup-customer-form');
+    const topupCustomerNameEl = document.getElementById('topup-customer-name');
+
+    document.querySelectorAll('.topup-customer-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+            const customerId = button.dataset.customerId;
+            const customerName = button.dataset.customerName;
+            
+            topupCustomerNameEl.textContent = customerName;
+            topupCustomerFormEl.action = resolveTemplateUrl(topupUrlTemplate, customerId);
+            topupCustomerFormEl.reset();
+            
+            showModal(topupCustomerModalEl);
         });
     });
 

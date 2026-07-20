@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\CustomerService;
+use App\Services\WalletService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -13,10 +14,12 @@ use Illuminate\Validation\Rule;
 class CustomerController extends Controller
 {
     private CustomerService $customerService;
+    private WalletService $walletService;
 
-    public function __construct(CustomerService $customerService)
+    public function __construct(CustomerService $customerService, WalletService $walletService)
     {
         $this->customerService = $customerService;
+        $this->walletService = $walletService;
     }
 
     public function index(Request $request): View
@@ -55,6 +58,35 @@ class CustomerController extends Controller
         return redirect()
             ->route('customers')
             ->with('success', 'ลบข้อมูลลูกค้าเรียบร้อยแล้ว');
+    }
+
+    public function topup(Request $request, int $customerId): RedirectResponse
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0',
+            'bonus' => 'nullable|numeric|min:0',
+            'note' => 'nullable|string|max:255',
+        ]);
+
+        $amount = (float)$request->input('amount', 0);
+        $bonus = (float)$request->input('bonus', 0);
+
+        if ($amount <= 0 && $bonus <= 0) {
+            return redirect()->back()->withErrors(['amount' => 'จำนวนเงินหรือโบนัสต้องมากกว่า 0']);
+        }
+
+        $user = $request->user();
+        $this->walletService->topUp(
+            (int)$user->branch_id,
+            $customerId,
+            $amount,
+            $request->input('note', 'เติมเงินผ่านระบบหลังบ้าน'),
+            $bonus
+        );
+
+        return redirect()
+            ->route('customers', ['customer_id' => $customerId])
+            ->with('success', 'เติมเงินเข้ากระเป๋าสำเร็จแล้ว');
     }
 
     public function quickCreate(Request $request): JsonResponse

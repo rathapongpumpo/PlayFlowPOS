@@ -14,6 +14,8 @@ class PosService
     private BookingService $bookingService;
     private PackageService $packageService;
     private CommissionService $commissionService;
+    private WalletService $walletService;
+    private PointService $pointService;
     private array $tableExistsCache = [];
     private array $columnExistsCache = [];
 
@@ -21,13 +23,17 @@ class PosService
         BranchContextService $branchContext,
         BookingService $bookingService,
         PackageService $packageService,
-        CommissionService $commissionService
+        CommissionService $commissionService,
+        WalletService $walletService,
+        PointService $pointService
     )
     {
         $this->branchContext = $branchContext;
         $this->bookingService = $bookingService;
         $this->packageService = $packageService;
         $this->commissionService = $commissionService;
+        $this->walletService = $walletService;
+        $this->pointService = $pointService;
     }
 
     public function getPageData(User $user, array $query = []): array
@@ -53,6 +59,7 @@ class PosService
         $items = isset($payload['items']) && is_array($payload['items']) ? $payload['items'] : [];
         $customerId = isset($payload['customer_id']) && $payload['customer_id'] !== null ? (int) $payload['customer_id'] : null;
         $staffId = isset($payload['staff_id']) && $payload['staff_id'] !== null ? (int) $payload['staff_id'] : null;
+        $sellerId = isset($payload['seller_id']) && $payload['seller_id'] !== null ? (int) $payload['seller_id'] : null;
         $discountAmount = isset($payload['discount_amount']) ? (float) $payload['discount_amount'] : 0.0;
         $tipAmount = isset($payload['tip_amount']) ? (float) $payload['tip_amount'] : 0.0;
         $paymentMethod = $this->normalizePaymentMethod((string) ($payload['payment_method'] ?? 'cash'));
@@ -78,6 +85,7 @@ class PosService
             $customerId,
             $discountAmount,
             $tipAmount,
+            $sellerId,
             $paymentMethod,
             $usePackage,
             $bookingContext
@@ -86,14 +94,41 @@ class PosService
             $normalizedItems = $normalized['items'];
             $discount = max(0.0, $discountAmount);
             $tip = max(0.0, $tipAmount);
+            
+            $pointsToRedeem = isset($payload['points_redeem']) ? (int)$payload['points_redeem'] : 0;
+            $pointsDiscount = $pointsToRedeem > 0 ? $this->pointService->calculateDiscount($pointsToRedeem) : 0.0;
+            
             $subtotal = array_reduce($normalizedItems, static function (float $carry, array $item): float {
                 return $carry + (float) $item['line_total'];
             }, 0.0);
-            $grandTotal = max(0.0, $subtotal - $discount) + $tip;
+            
+            $totalDiscount = $discount + $pointsDiscount;
+            $grandTotal = max(0.0, $subtotal - $totalDiscount) + $tip;
 
             $finalPaymentMethod = $paymentMethod;
             if ($normalized['has_package_redemption'] && $grandTotal <= 0.0) {
                 $finalPaymentMethod = 'package_redeem';
+            }
+
+            // Calculate points earned
+            $pointsEarned = 0;
+            if ($customerId && $grandTotal > 0 && in_array($finalPaymentMethod, ['cash', 'transfer', 'credit_card', 'wallet'])) {
+                // Deduct tip from points calculation if needed? Usually tips don't earn points.
+                $earnableAmount = max(0.0, $grandTotal - $tip);
+                $pointsEarned = $this->pointService->calculatePointsEarned($earnableAmount);
+            }
+
+            // Charge wallet if needed
+            if ($finalPaymentMethod === 'wallet') {
+                if (!$customerId) {
+                    throw ValidationException::withMessages(['payment_method' => ['ต้องระบุลูกค้าเมื่อชำระด้วยกระเป๋าเงิน']]);
+                }
+                $this->walletService->spend($branchId, $customerId, $grandTotal, null, 'ชำระค่าบริการ POS');
+            }
+
+            // Redeem points if needed
+            if ($customerId && $pointsToRedeem > 0) {
+                $this->pointService->redeemPoints($branchId, $customerId, $pointsToRedeem, null, 'ใช้เป็นส่วนลด '.number_format($pointsDiscount, 2).' บาท');
             }
 
             $orderNo = $this->generateOrderNo($branchId);
@@ -101,14 +136,40 @@ class PosService
                 'branch_id' => $branchId,
                 'order_no' => $orderNo,
                 'customer_id' => $customerId,
+                'seller_id' => $sellerId,
                 'total_amount' => $subtotal,
-                'discount_amount' => $discount,
+                'discount_amount' => $totalDiscount, // combine discount
                 'tip_amount' => $tip,
                 'grand_total' => $grandTotal,
                 'payment_method' => $finalPaymentMethod,
+                'points_earned' => $pointsEarned,
+                'points_redeemed' => $pointsToRedeem,
                 'status' => 'paid',
                 'created_at' => now(),
             ]);
+
+            // Link transactions to order
+            if ($finalPaymentMethod === 'wallet') {
+                DB::table('wallet_transactions')
+                    ->where('customer_id', $customerId)
+                    ->whereNull('order_id')
+                    ->orderBy('id', 'desc')
+                    ->limit(1)
+                    ->update(['order_id' => $orderId]);
+            }
+            if ($pointsToRedeem > 0) {
+                DB::table('point_transactions')
+                    ->where('customer_id', $customerId)
+                    ->whereNull('order_id')
+                    ->orderBy('id', 'desc')
+                    ->limit(1)
+                    ->update(['order_id' => $orderId]);
+            }
+
+            // Earn points
+            if ($pointsEarned > 0) {
+                $this->pointService->earnPoints($branchId, $customerId, $pointsEarned, $orderId, 'ได้รับจากการซื้อบริการ');
+            }
 
             foreach ($normalizedItems as $item) {
                 DB::table('order_items')->insert([
@@ -196,6 +257,24 @@ class PosService
                         ->update(['order_id' => $orderId]);
                 }
             }
+
+            // --- Stamp Card System: 1 visit = 1 stamp ---
+            if ($customerId !== null) {
+                DB::table('customers')
+                    ->where('id', $customerId)
+                    ->increment('total_stamps', 1);
+
+                DB::table('customer_stamps')->insert([
+                    'branch_id' => $branchId,
+                    'customer_id' => $customerId,
+                    'order_id' => $orderId,
+                    'stamps_earned' => 1,
+                    'note' => 'แสตมป์จากการใช้บริการ (บิล: ' . $orderNo . ')',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+            // --------------------------------------------
 
             return [
                 'message' => 'ชำระเงินสำเร็จ',
@@ -295,12 +374,15 @@ class PosService
         }
 
         return $query
-            ->get(['id', 'name', 'phone'])
+            ->get(['id', 'name', 'phone', 'wallet_balance', 'total_points', 'total_stamps'])
             ->map(static function ($row): array {
                 return [
                     'id' => (string) $row->id,
                     'name' => (string) $row->name,
                     'phone' => (string) $row->phone,
+                    'wallet_balance' => (float) ($row->wallet_balance ?? 0),
+                    'total_points' => (int) ($row->total_points ?? 0),
+                    'total_stamps' => (int) ($row->total_stamps ?? 0),
                 ];
             })
             ->all();

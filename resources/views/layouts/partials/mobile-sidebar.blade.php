@@ -55,6 +55,20 @@
                 'subtitle' => 'ดูภาพรวมยอดขายและสรุปประจำวัน',
             ],
             [
+                'route' => 'crm.index',
+                'active' => ['crm.*'],
+                'icon' => 'bi-bar-chart-line-fill',
+                'title' => 'CRM Analytics',
+                'subtitle' => 'วิเคราะห์ข้อมูลลูกค้าและแต้มสะสม',
+            ],
+            [
+                'route' => 'operations.index',
+                'active' => ['operations.*'],
+                'icon' => 'bi-shop-window',
+                'title' => 'เปิด/ปิดลิ้นชัก',
+                'subtitle' => 'ระบบจัดการลิ้นชักเงินสดประจำวัน',
+            ],
+            [
                 'route' => 'pos',
                 'active' => ['pos', 'pos.checkout'],
                 'icon' => 'bi-cart-fill',

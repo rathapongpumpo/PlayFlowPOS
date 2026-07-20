@@ -295,8 +295,10 @@
                 <thead>
                     <tr>
                         <th class="ps-4" style="width: 15%;">วันที่เข้างาน</th>
-                        <th style="width: 35%;">พนักงาน (หมอนวด)</th>
+                        <th style="width: 25%;">พนักงาน (หมอนวด)</th>
                         <th style="width: 20%;">เวลาเริ่ม - เวลาจบ</th>
+                        <th class="text-center" style="width: 20%;">ค่ามือที่ได้ / การันตี</th>
+                        <th class="text-center" style="width: 10%;">เงินชดเชย</th>
                         <th class="text-end pe-4" style="width: 10%;">จัดการ</th>
                     </tr>
                 </thead>
@@ -328,6 +330,19 @@
                                     <span class="time-slot"><i class="fa-regular fa-clock"></i> {{ \Carbon\Carbon::parse($shift->end_time)->format('H:i') }}</span>
                                 </div>
                             </td>
+                            <td class="text-center">
+                                <div class="fw-bold text-success">{{ number_format($shift->earned_commission, 2) }} ฿</div>
+                                <div class="text-muted small">/ {{ number_format($shift->daily_guarantee ?? 0, 2) }} ฿</div>
+                            </td>
+                            <td class="text-center">
+                                @if($shift->guarantee_topup > 0)
+                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 py-2 px-3 fw-bold rounded-pill">
+                                        +{{ number_format($shift->guarantee_topup, 2) }} ฿
+                                    </span>
+                                @else
+                                    <span class="text-muted small">-</span>
+                                @endif
+                            </td>
                             <td class="text-end pe-4">
                                 <form action="{{ route('masseuse.shifts.destroy', $shift->id) }}" method="POST" class="d-inline" onsubmit="return confirm('ยืนยันการลบตารางงานนี้?');">
                                     @csrf
@@ -340,7 +355,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="p-0">
+                            <td colspan="6" class="p-0">
                                 <div class="empty-state">
                                     <div class="empty-state-icon">
                                         <i class="fa-solid fa-calendar-xmark"></i>

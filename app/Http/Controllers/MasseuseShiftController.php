@@ -24,11 +24,24 @@ class MasseuseShiftController extends Controller
         
         $shifts = DB::table('staff_shifts')
             ->join('masseuses', 'staff_shifts.masseuse_id', '=', 'masseuses.id')
+            ->leftJoin('users', 'masseuses.user_id', '=', 'users.id')
             ->where('staff_shifts.branch_id', $branchId)
             ->whereMonth('staff_shifts.shift_date', $month)
             ->whereYear('staff_shifts.shift_date', $year)
-            ->select('staff_shifts.*', 'masseuses.nickname', 'masseuses.full_name')
+            ->select('staff_shifts.*', 'masseuses.nickname', 'masseuses.full_name', 'users.daily_guarantee')
             ->get();
+            
+        // คำนวณค่าคอมมิชชั่นรายวัน สำหรับกะงานแต่ละวัน
+        foreach ($shifts as $shift) {
+            $shift->earned_commission = DB::table('commissions')
+                ->where('masseuse_id', $shift->masseuse_id)
+                ->where('branch_id', $branchId)
+                ->whereDate('calculated_at', $shift->shift_date)
+                ->sum('amount');
+                
+            $guarantee = (float)($shift->daily_guarantee ?? 0);
+            $shift->guarantee_topup = max(0, $guarantee - $shift->earned_commission);
+        }
             
         $masseuses = DB::table('masseuses')
             ->where('branch_id', $branchId)

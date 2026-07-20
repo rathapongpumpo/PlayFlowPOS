@@ -105,13 +105,26 @@
                         <div class="small text-muted mt-1" id="customer-match-hint">Walk-in</div>
                         <div class="small text-primary mt-1" id="package-balance-hint"></div>
                     </div>
-                    <div class="col-5">
-                        <label class="small fw-bold text-muted">หมอนวด/ผู้ขาย</label>
-                        <select id="staff-select" class="form-select form-select-sm rounded-3">
-                            @foreach($staff as $s)
-                            <option value="{{ $s['id'] }}">{{ $s['name'] }}</option>
-                            @endforeach
-                        </select>
+                    <div class="col-12 mt-2 border-top pt-2">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="small fw-bold text-muted">หมอนวด (คนทำ)</label>
+                                <select id="staff-select" class="form-select form-select-sm rounded-3">
+                                    @foreach($staff as $s)
+                                    <option value="{{ $s['id'] }}">{{ $s['name'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="small fw-bold text-muted">ผู้ขาย (แคชเชียร์)</label>
+                                <select id="seller-select" class="form-select form-select-sm rounded-3">
+                                    <option value="">-- ไม่ระบุ --</option>
+                                    @foreach($staff as $s)
+                                    <option value="{{ $s['id'] }}">{{ $s['name'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -168,6 +181,20 @@
                                 <i class="bi bi-credit-card d-block fs-4"></i> บัตร
                             </button>
                         </div>
+                        <div class="col-12 mt-2">
+                            <button class="btn btn-outline-secondary w-100 rounded-3 py-2 payment-btn" data-pay="wallet">
+                                <i class="bi bi-wallet2 fs-5 me-2"></i> กระเป๋าเงิน (Wallet)
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="small fw-bold text-muted">ใช้แต้มเป็นส่วนลด (Points Redeem)</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white"><i class="bi bi-star-fill text-warning"></i></span>
+                            <input type="number" id="points-redeem" class="form-control" placeholder="จำนวนแต้มที่ต้องการใช้" min="0" onchange="calculateTotal()">
+                        </div>
+                        <small class="text-muted" style="font-size: 11px;">1 แต้ม = ส่วนลด 1 บาท</small>
                     </div>
 
                     <button class="btn btn-primary w-100 btn-lg rounded-pill mt-3 py-3 fw-bold shadow-sm" id="checkout-btn" onclick="checkout()">
@@ -628,7 +655,18 @@
             return `${name} (${qty} สิทธิ์)`;
         });
         const tail = balances.length > 2 ? ` +${balances.length - 2}` : '';
-        packageBalanceHintEl.textContent = `แพ็กเกจคงเหลือ: ${previews.join(', ')}${tail}`;
+        
+        const customer = customers.find(c => Number(c.id) === resolvedCustomerId);
+        const wallet = customer && customer.wallet_balance ? Number(customer.wallet_balance).toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00';
+        const points = customer && customer.total_points ? Number(customer.total_points).toLocaleString('th-TH') : '0';
+        const stamps = customer && customer.total_stamps ? Number(customer.total_stamps).toLocaleString('th-TH') : '0';
+        
+        packageBalanceHintEl.innerHTML = `
+            แพ็กเกจคงเหลือ: ${previews.join(', ')}${tail}<br>
+            <span class="text-primary"><i class="bi bi-wallet2"></i> กระเป๋าเงิน: ${wallet}฿</span> | 
+            <span class="text-warning"><i class="bi bi-star-fill"></i> ${points} pts</span> |
+            <span class="text-info"><i class="bi bi-award-fill"></i> แสตมป์: ${stamps} ดวง</span>
+        `;
     }
 
     function syncCustomerIdentityFromInput() {
@@ -705,7 +743,11 @@
         const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
         const discount = parseFloat(discountInputEl.value) || 0;
         const tip = parseFloat(tipInputEl.value) || 0;
-        const total = Math.max(0, subtotal - discount) + tip;
+        
+        const pointsRedeemEl = document.getElementById('points-redeem');
+        const pointsRedeem = parseFloat(pointsRedeemEl ? pointsRedeemEl.value : 0) || 0;
+        
+        const total = Math.max(0, subtotal - discount - pointsRedeem) + tip;
 
         document.getElementById('subtotal').innerText = subtotal.toLocaleString() + ' ฿';
         document.getElementById('grand-total').innerText = total.toLocaleString() + ' ฿';
@@ -894,11 +936,16 @@
 
         syncCustomerIdentityFromInput();
 
+        const pointsRedeemEl = document.getElementById('points-redeem');
+        const sellerSelectEl = document.getElementById('seller-select');
+
         const payload = {
             customer_id: getSelectedCustomerId(),
             staff_id: staffSelectEl.value ? Number(staffSelectEl.value) : null,
+            seller_id: sellerSelectEl && sellerSelectEl.value ? Number(sellerSelectEl.value) : null,
             discount_amount: parseFloat(discountInputEl.value) || 0,
             tip_amount: parseFloat(tipInputEl.value) || 0,
+            points_redeem: parseFloat(pointsRedeemEl ? pointsRedeemEl.value : 0) || 0,
             payment_method: getActivePaymentMethod(),
             use_package: document.getElementById('use-package-checkbox') ? document.getElementById('use-package-checkbox').checked : true,
             items: cart.map(item => ({
@@ -974,6 +1021,7 @@
             }
 
             cart = [];
+            if (pointsRedeemEl) pointsRedeemEl.value = '';
             renderCart();
         } catch (error) {
             notifyError(error.message);

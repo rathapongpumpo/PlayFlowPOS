@@ -57,6 +57,25 @@ class DashboardService
         $yesterdayMasseuses = $this->buildMasseuseSummaryRows($resolvedBranchId, $yesterday, $today);
         $masseuseComparisons = $this->mergeMasseuseComparisons($todayMasseuses, $yesterdayMasseuses);
 
+        // New vs Old Customers for today
+        $todayActiveCustomers = DB::table('orders')
+            ->where('branch_id', $resolvedBranchId)
+            ->whereBetween('created_at', [$today, $tomorrow])
+            ->whereNotNull('customer_id')
+            ->distinct()
+            ->pluck('customer_id');
+
+        $newCustomersCount = 0;
+        $oldCustomersCount = 0;
+
+        if ($todayActiveCustomers->isNotEmpty()) {
+            $newCustomersCount = DB::table('customers')
+                ->whereIn('id', $todayActiveCustomers)
+                ->where('created_at', '>=', $today)
+                ->count();
+            $oldCustomersCount = $todayActiveCustomers->count() - $newCustomersCount;
+        }
+
         return [
             'branch_id' => $resolvedBranchId,
             'branch_name' => (string) $branch->name,
@@ -77,6 +96,8 @@ class DashboardService
             'today_package_sales' => $todayPackageSales,
             'today_total_combined_sales' => $todayTotalCombinedSales,
             'net_profit' => $netProfit,
+            'new_customers_today' => $newCustomersCount,
+            'old_customers_today' => $oldCustomersCount,
             'last_sync' => Carbon::now()->format('H:i'),
             'top_services' => $topServices,
             'top_masseuses' => $topMasseuses,

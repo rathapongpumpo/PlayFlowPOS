@@ -65,8 +65,14 @@
             <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : 'link-dark' }}">
                 <i class="bi bi-speedometer2 me-2"></i> แดชบอร์ด
             </a>
+            <a href="{{ route('crm.index') }}" class="nav-link {{ request()->routeIs('crm.*') ? 'active' : 'link-dark' }}">
+                <i class="bi bi-bar-chart-line-fill me-2"></i> CRM Analytics
+            </a>
             <a href="{{ route('pos') }}" class="nav-link {{ request()->routeIs('pos*') ? 'active' : 'link-dark' }}">
                 <i class="bi bi-cart-fill me-2"></i> หน้าขาย
+            </a>
+            <a href="{{ route('operations.index') }}" class="nav-link {{ request()->routeIs('operations.*') ? 'active' : 'link-dark' }}">
+                <i class="bi bi-shop-window me-2"></i> เปิด/ปิดลิ้นชัก
             </a>
             <a href="{{ route('booking') }}" class="nav-link {{ request()->routeIs('booking*') ? 'active' : 'link-dark' }}">
                 <i class="bi bi-calendar-event-fill me-2"></i> คิว
@@ -96,7 +102,10 @@
                     <i class="bi bi-list-stars me-2"></i> บริการ
                 </a>
                 <a href="{{ route('products') }}" class="nav-link {{ request()->routeIs('products*') ? 'active' : 'link-dark' }}">
-                    <i class="bi bi-box-seam-fill me-2"></i> สินค้าและสต็อก
+                    <i class="bi bi-box-seam-fill me-2"></i> สินค้า (ขาย)
+                </a>
+                <a href="{{ route('store-assets.index') }}" class="nav-link {{ request()->routeIs('store-assets.*') ? 'active' : 'link-dark' }}">
+                    <i class="bi bi-boxes me-2"></i> ของใช้ในร้าน
                 </a>
                 <a href="{{ route('massage-rooms') }}" class="nav-link {{ request()->routeIs('massage-rooms*') ? 'active' : 'link-dark' }}">
                     <i class="bi bi-door-open me-2"></i> ห้องนวด
