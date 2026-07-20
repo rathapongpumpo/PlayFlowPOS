@@ -94,6 +94,7 @@ Route::middleware(['auth', 'shop.access'])->group(function (): void {
         Route::get('/packages', 'PackageController@index')->name('packages');
         Route::post('/packages', 'PackageController@store')->name('packages.store');
         Route::put('/packages/{packageId}', 'PackageController@update')->name('packages.update');
+        Route::delete('/packages/{packageId}', 'PackageController@destroy')->name('packages.destroy');
 
         Route::get('/products', 'ProductController@index')->name('products');
         Route::post('/products', 'ProductController@store')->name('products.store');

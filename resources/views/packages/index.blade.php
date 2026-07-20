@@ -112,6 +112,27 @@
         }
     }
 </style>
+<script>
+    function toggleCreatePackageType(sel) {
+        if (sel.value === 'wallet_credit') {
+            document.getElementById('create-qty-col').style.display = 'none';
+            document.getElementById('create-credit-col').style.display = 'block';
+        } else {
+            document.getElementById('create-qty-col').style.display = 'block';
+            document.getElementById('create-credit-col').style.display = 'none';
+        }
+    }
+
+    function toggleEditPackageType(id, type) {
+        if (type === 'wallet_credit') {
+            document.getElementById('edit-qty-wrapper-' + id).style.display = 'none';
+            document.getElementById('edit-credit-wrapper-' + id).style.display = 'block';
+        } else {
+            document.getElementById('edit-qty-wrapper-' + id).style.display = 'block';
+            document.getElementById('edit-credit-wrapper-' + id).style.display = 'none';
+        }
+    }
+</script>
 @endpush
 
 @section('content')
@@ -166,21 +187,32 @@
                             <div class="section-title">เพิ่มแพ็กเกจใหม่</div>
                             <form method="POST" action="{{ route('packages.store') }}" class="row g-2">
                                 @csrf
-                                <div class="col-12 col-md-4">
+                                <div class="col-12 col-md-3">
                                     <label class="form-label small fw-bold">ชื่อแพ็กเกจ</label>
-                                    <input type="text" name="name" class="form-control" value="{{ old('name') }}" placeholder="เช่น นวดไทย 10 ครั้ง" required>
+                                    <input type="text" name="name" class="form-control" value="{{ old('name') }}" placeholder="เช่น นวด 10 ครั้ง" required>
                                 </div>
                                 <div class="col-6 col-md-3">
+                                    <label class="form-label small fw-bold">ประเภท</label>
+                                    <select name="type" class="form-select" onchange="toggleCreatePackageType(this)">
+                                        <option value="session" {{ old('type') === 'session' ? 'selected' : '' }}>จำนวนครั้ง</option>
+                                        <option value="wallet_credit" {{ old('type') === 'wallet_credit' ? 'selected' : '' }}>เติมเงิน Wallet</option>
+                                    </select>
+                                </div>
+                                <div class="col-6 col-md-2">
                                     <label class="form-label small fw-bold">ราคา (บาท)</label>
                                     <input type="number" step="0.01" min="0" name="price" class="form-control" value="{{ old('price', '0') }}" required>
                                 </div>
-                                <div class="col-6 col-md-2">
-                                    <label class="form-label small fw-bold">จำนวนสิทธิ์</label>
-                                    <input type="number" min="1" name="total_qty" class="form-control" value="{{ old('total_qty', '1') }}" required>
+                                <div class="col-6 col-md-2" id="create-qty-col" style="{{ old('type') === 'wallet_credit' ? 'display:none;' : '' }}">
+                                    <label class="form-label small fw-bold">สิทธิ์รวม (ครั้ง)</label>
+                                    <input type="number" min="1" name="total_qty" class="form-control" value="{{ old('total_qty', '1') }}">
                                 </div>
-                                <div class="col-6 col-md-3">
+                                <div class="col-6 col-md-2" id="create-credit-col" style="{{ old('type', 'session') === 'session' ? 'display:none;' : '' }}">
+                                    <label class="form-label small fw-bold">เครดิต (บาท)</label>
+                                    <input type="number" step="0.01" min="0" name="credit_amount" class="form-control" value="{{ old('credit_amount', '0') }}">
+                                </div>
+                                <div class="col-6 col-md-2">
                                     <label class="form-label small fw-bold">อายุแพ็กเกจ (วัน)</label>
-                                    <input type="number" min="1" name="valid_days" class="form-control" value="{{ old('valid_days') }}" placeholder="เว้นว่าง = ไม่หมดอายุ">
+                                    <input type="number" min="1" name="valid_days" class="form-control" value="{{ old('valid_days') }}" placeholder="เว้น = ไม่หมดอายุ">
                                 </div>
                                 <div class="col-12 d-grid mt-2">
                                     <button type="submit" class="btn gradient-btn rounded-3"><i class="fa-solid fa-plus me-1"></i>เพิ่มแพ็กเกจ</button>
@@ -203,11 +235,12 @@
                     <table class="table table-hover align-middle mb-0">
                         <thead>
                             <tr>
-                                <th style="min-width: 220px;">ชื่อแพ็กเกจ</th>
-                                <th style="min-width: 140px;">ราคา</th>
-                                <th style="min-width: 120px;">สิทธิ์รวม</th>
-                                <th style="min-width: 140px;">อายุ (วัน)</th>
-                                <th class="text-end" style="min-width: 120px;">บันทึก</th>
+                                <th style="min-width: 180px;">ชื่อแพ็กเกจ</th>
+                                <th style="min-width: 110px;">ประเภท</th>
+                                <th style="min-width: 100px;">ราคา</th>
+                                <th style="min-width: 160px;">สิทธิ์รวม / เครดิต</th>
+                                <th style="min-width: 100px;">อายุ (วัน)</th>
+                                <th class="text-end" style="min-width: 80px;">บันทึก</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -217,20 +250,42 @@
                                     <form id="package-form-{{ $package['id'] }}" method="POST" action="{{ route('packages.update', ['packageId' => $package['id']]) }}">
                                         @csrf
                                         @method('PUT')
-                                        <input type="text" name="name" class="form-control" value="{{ $package['name'] }}" required>
+                                        <input type="text" name="name" class="form-control form-control-sm" value="{{ $package['name'] }}" required>
                                     </form>
                                 </td>
                                 <td>
-                                    <input form="package-form-{{ $package['id'] }}" type="number" step="0.01" min="0" name="price" class="form-control" value="{{ $package['price'] }}" required>
+                                    <select form="package-form-{{ $package['id'] }}" name="type" class="form-select form-select-sm" onchange="toggleEditPackageType({{ $package['id'] }}, this.value)">
+                                        <option value="session" {{ ($package['type'] ?? 'session') === 'session' ? 'selected' : '' }}>จำนวนครั้ง</option>
+                                        <option value="wallet_credit" {{ ($package['type'] ?? 'session') === 'wallet_credit' ? 'selected' : '' }}>Wallet</option>
+                                    </select>
                                 </td>
                                 <td>
-                                    <input form="package-form-{{ $package['id'] }}" type="number" min="1" name="total_qty" class="form-control" value="{{ $package['total_qty'] }}" required>
+                                    <input form="package-form-{{ $package['id'] }}" type="number" step="0.01" min="0" name="price" class="form-control form-control-sm" value="{{ $package['price'] }}" required>
                                 </td>
                                 <td>
-                                    <input form="package-form-{{ $package['id'] }}" type="number" min="1" name="valid_days" class="form-control" value="{{ $package['valid_days'] }}" placeholder="ไม่หมดอายุ">
+                                    <div id="edit-qty-wrapper-{{ $package['id'] }}" style="{{ ($package['type'] ?? 'session') === 'wallet_credit' ? 'display:none;' : '' }}">
+                                        <div class="input-group input-group-sm">
+                                            <input form="package-form-{{ $package['id'] }}" type="number" min="1" name="total_qty" class="form-control" value="{{ $package['total_qty'] }}">
+                                            <span class="input-group-text">ครั้ง</span>
+                                        </div>
+                                    </div>
+                                    <div id="edit-credit-wrapper-{{ $package['id'] }}" style="{{ ($package['type'] ?? 'session') === 'session' ? 'display:none;' : '' }}">
+                                        <div class="input-group input-group-sm">
+                                            <input form="package-form-{{ $package['id'] }}" type="number" step="0.01" min="0" name="credit_amount" class="form-control" value="{{ $package['credit_amount'] ?? 0 }}">
+                                            <span class="input-group-text">บ.</span>
+                                        </div>
+                                    </div>
                                 </td>
-                                <td class="text-end">
-                                    <button form="package-form-{{ $package['id'] }}" type="submit" class="btn btn-outline-primary rounded-pill px-3"><i class="fa-solid fa-floppy-disk me-1"></i>อัปเดต</button>
+                                <td>
+                                    <input form="package-form-{{ $package['id'] }}" type="number" min="1" name="valid_days" class="form-control form-control-sm" value="{{ $package['valid_days'] }}" placeholder="ไม่มี">
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <button form="package-form-{{ $package['id'] }}" type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-3 me-1"><i class="fa-solid fa-floppy-disk"></i></button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="if(confirm('ยืนยันการลบแพ็กเกจนี้?')) { document.getElementById('delete-package-{{ $package['id'] }}').submit(); }"><i class="fa-solid fa-trash-can"></i></button>
+                                    <form id="delete-package-{{ $package['id'] }}" method="POST" action="{{ route('packages.destroy', ['packageId' => $package['id']]) }}" class="d-none">
+                                        @csrf
+                                        @method('DELETE')
+                                    </form>
                                 </td>
                             </tr>
                             @empty

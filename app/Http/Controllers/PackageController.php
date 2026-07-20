@@ -31,8 +31,10 @@ class PackageController extends Controller
     {
         $payload = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'type' => ['nullable', 'string', 'in:session,wallet_credit'],
             'price' => ['required', 'numeric', 'min:0'],
-            'total_qty' => ['required', 'integer', 'min:1'],
+            'total_qty' => ['nullable', 'integer', 'min:1'],
+            'credit_amount' => ['nullable', 'numeric', 'min:0'],
             'valid_days' => ['nullable', 'integer', 'min:1'],
         ]);
 
@@ -47,8 +49,10 @@ class PackageController extends Controller
     {
         $payload = $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'type' => ['nullable', 'string', 'in:session,wallet_credit'],
             'price' => ['required', 'numeric', 'min:0'],
-            'total_qty' => ['required', 'integer', 'min:1'],
+            'total_qty' => ['nullable', 'integer', 'min:1'],
+            'credit_amount' => ['nullable', 'numeric', 'min:0'],
             'valid_days' => ['nullable', 'integer', 'min:1'],
         ]);
 
@@ -57,5 +61,14 @@ class PackageController extends Controller
         return redirect()
             ->route('packages')
             ->with('success', 'อัปเดตแพ็กเกจเรียบร้อยแล้ว');
+    }
+
+    public function destroy(Request $request, int $packageId): RedirectResponse
+    {
+        $this->packageService->destroyPackage($request->user(), $packageId);
+
+        return redirect()
+            ->route('packages')
+            ->with('success', 'ลบแพ็กเกจเรียบร้อยแล้ว');
     }
 }

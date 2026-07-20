@@ -44,7 +44,7 @@ class PackageService
         }
 
         $packages = $packageQuery
-            ->get(['id', 'name', 'price', 'total_qty', 'valid_days'])
+            ->get(['id', 'name', 'price', 'total_qty', 'valid_days', 'type', 'credit_amount'])
             ->map(static function ($row): array {
                 return [
                     'id' => (int) $row->id,
@@ -52,6 +52,8 @@ class PackageService
                     'price' => (float) ($row->price ?? 0),
                     'total_qty' => (int) ($row->total_qty ?? 0),
                     'valid_days' => $row->valid_days !== null ? (int) $row->valid_days : null,
+                    'type' => (string) ($row->type ?? 'session'),
+                    'credit_amount' => (float) ($row->credit_amount ?? 0),
                 ];
             })
             ->all();
@@ -167,6 +169,8 @@ class PackageService
         $row = [
             'name' => $name,
             'price' => $this->normalizeMoney($payload['price'] ?? 0),
+            'type' => in_array($payload['type'] ?? 'session', ['session', 'wallet_credit']) ? $payload['type'] : 'session',
+            'credit_amount' => $this->normalizeMoney($payload['credit_amount'] ?? 0),
             'total_qty' => $this->normalizeQty($payload['total_qty'] ?? 1),
             'valid_days' => $this->normalizeValidDays($payload['valid_days'] ?? null),
         ];
@@ -219,6 +223,8 @@ class PackageService
         $updates = [
             'name' => $name,
             'price' => $this->normalizeMoney($payload['price'] ?? 0),
+            'type' => in_array($payload['type'] ?? 'session', ['session', 'wallet_credit']) ? $payload['type'] : 'session',
+            'credit_amount' => $this->normalizeMoney($payload['credit_amount'] ?? 0),
             'total_qty' => $this->normalizeQty($payload['total_qty'] ?? 1),
             'valid_days' => $this->normalizeValidDays($payload['valid_days'] ?? null),
         ];
@@ -230,6 +236,33 @@ class PackageService
         DB::table('packages')
             ->where('id', $packageId)
             ->update($updates);
+    }
+    public function destroyPackage(User $user, int $packageId): void
+    {
+        $this->assertModuleReady();
+        $branchId = $this->branchContext->resolveAuthorizedBranchId($user);
+
+        $existing = $this->findScopedPackage($packageId, $branchId);
+        if ($existing === null) {
+            throw ValidationException::withMessages([
+                'package' => ['ไม่พบแพ็กเกจที่ต้องการลบ'],
+            ]);
+        }
+
+        // Check if package is already purchased
+        $inUse = DB::table('customer_packages')
+            ->where('package_id', $packageId)
+            ->exists();
+            
+        if ($inUse) {
+            throw ValidationException::withMessages([
+                'package' => ['ไม่สามารถลบแพ็กเกจนี้ได้ เนื่องจากมีลูกค้าซื้อและใช้งานแพ็กเกจนี้อยู่'],
+            ]);
+        }
+
+        DB::table('packages')
+            ->where('id', $packageId)
+            ->delete();
     }
 
     public function getPackagesForPos(int $branchId): array
@@ -245,12 +278,14 @@ class PackageService
         }
 
         return $query
-            ->get(['id', 'name', 'price'])
+            ->get(['id', 'name', 'price', 'type', 'credit_amount'])
             ->map(static function ($row): array {
                 return [
                     'id' => 'package:' . (string) $row->id,
                     'source_id' => (int) $row->id,
                     'type' => 'package',
+                    'base_type' => (string) ($row->type ?? 'session'),
+                    'credit_amount' => (float) ($row->credit_amount ?? 0),
                     'name' => (string) ($row->name ?? ''),
                     'price' => (float) ($row->price ?? 0),
                     'duration' => null,

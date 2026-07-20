@@ -189,7 +189,8 @@ class PosService
             $packagePurchaseSummary = $this->grantPurchasedPackages(
                 $branchId,
                 $customerId,
-                $normalized['package_purchase_plan']
+                $normalized['package_purchase_plan'],
+                $orderId
             );
             $packageRedeemSummary = $this->applyPackageRedemptions(
                 $branchId,
@@ -760,7 +761,7 @@ class PosService
         return trim($keyword);
     }
 
-    private function grantPurchasedPackages(int $branchId, ?int $customerId, array $purchasePlan): array
+    private function grantPurchasedPackages(int $branchId, ?int $customerId, array $purchasePlan, ?int $orderId = null): array
     {
         if (empty($purchasePlan)) {
             return [];
@@ -781,28 +782,43 @@ class PosService
             $package = DB::table('packages')
                 ->where('id', $packageId)
                 ->where('branch_id', $branchId)
-                ->first(['id', 'name', 'branch_id', 'total_qty', 'valid_days']);
+                ->first(['id', 'name', 'branch_id', 'total_qty', 'valid_days', 'type', 'credit_amount']);
 
             if ($package === null) {
                 continue;
             }
 
-            $remainingQty = max(1, (int) ($package->total_qty ?? 1));
-            $now = now();
-            $expiredAt = null;
-            if (($package->valid_days ?? null) !== null && (int) $package->valid_days > 0) {
-                $expiredAt = Carbon::parse($now)->addDays((int) $package->valid_days)->toDateString();
-            }
+            if (($package->type ?? 'session') === 'wallet_credit') {
+                $creditAmount = (float) ($package->credit_amount ?? 0);
+                $totalCredit = $creditAmount * $qty;
+                if ($totalCredit > 0) {
+                    $this->walletService->topUp(
+                        $branchId,
+                        $customerId,
+                        $totalCredit,
+                        'ซื้อแพ็กเกจเติมเงิน: ' . ($package->name ?? ''),
+                        0,
+                        $orderId
+                    );
+                }
+            } else {
+                $remainingQty = max(1, (int) ($package->total_qty ?? 1));
+                $now = now();
+                $expiredAt = null;
+                if (($package->valid_days ?? null) !== null && (int) $package->valid_days > 0) {
+                    $expiredAt = Carbon::parse($now)->addDays((int) $package->valid_days)->toDateString();
+                }
 
-            for ($i = 0; $i < $qty; $i++) {
-                DB::table('customer_packages')->insert([
-                    'branch_id' => (int) ($package->branch_id ?? $branchId),
-                    'customer_id' => $customerId,
-                    'package_id' => (int) $package->id,
-                    'remaining_qty' => $remainingQty,
-                    'expired_at' => $expiredAt,
-                    'bought_at' => $now,
-                ]);
+                for ($i = 0; $i < $qty; $i++) {
+                    DB::table('customer_packages')->insert([
+                        'branch_id' => (int) ($package->branch_id ?? $branchId),
+                        'customer_id' => $customerId,
+                        'package_id' => (int) $package->id,
+                        'remaining_qty' => $remainingQty,
+                        'expired_at' => $expiredAt,
+                        'bought_at' => $now,
+                    ]);
+                }
             }
 
             $summary[] = [

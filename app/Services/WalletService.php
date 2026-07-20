@@ -21,13 +21,13 @@ class WalletService
         return $customer ? (float)$customer->wallet_balance : 0.00;
     }
 
-    public function topUp(int $branchId, int $customerId, float $amount, ?string $note = null, float $bonus = 0): array
+    public function topUp(int $branchId, int $customerId, float $amount, ?string $note = null, float $bonus = 0, ?int $orderId = null): array
     {
         if ($amount <= 0 && $bonus <= 0) {
             throw ValidationException::withMessages(['amount' => 'ยอดรวมต้องมากกว่า 0']);
         }
 
-        return DB::transaction(function () use ($branchId, $customerId, $amount, $bonus, $note) {
+        return DB::transaction(function () use ($branchId, $customerId, $amount, $bonus, $note, $orderId) {
             $customer = DB::table('customers')->where('id', $customerId)->first();
             if (!$customer) {
                 throw ValidationException::withMessages(['customer' => 'ไม่พบข้อมูลลูกค้า']);
@@ -50,6 +50,7 @@ class WalletService
                 'amount' => $totalAmount,
                 'balance_before' => $balanceBefore,
                 'balance_after' => $balanceAfter,
+                'order_id' => $orderId,
                 'note' => $bonus > 0 ? trim($note . " (Bonus: {$bonus})") : $note,
                 'created_at' => Carbon::now(),
                 'updated_at' => Carbon::now()
