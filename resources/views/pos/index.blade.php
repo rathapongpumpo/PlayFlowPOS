@@ -12,21 +12,21 @@
                 <label class="form-label fw-bold small text-muted text-uppercase" style="letter-spacing: 0.5px;">หมวดหมู่</label>
                 <div class="dropdown w-100">
                     <button class="btn w-100 text-start d-flex justify-content-between align-items-center shadow-sm border rounded-4 py-3 fw-bold bg-white" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="categoryDropdownBtn">
-                        <span class="d-flex align-items-center"><i class="bi bi-grid-fill me-2 text-primary fs-5"></i> <span class="ms-1">ทั้งหมด</span></span>
-                        <i class="bi bi-chevron-down text-muted"></i>
+                        <span class="d-flex align-items-center"><i class="fa-solid fa-table-cells-large me-2 text-primary fs-5"></i> <span class="ms-1">ทั้งหมด</span></span>
+                        <i class="fa-solid fa-chevron-down text-muted"></i>
                     </button>
                     <ul class="dropdown-menu w-100 border-0 shadow-lg rounded-4 p-2 mt-2">
                         <li><a class="dropdown-item rounded-3 py-2 fw-semibold active tab-filter d-flex align-items-center mb-1" href="#" data-filter="all">
-                            <i class="bi bi-grid-fill me-2 text-primary fs-5"></i> ทั้งหมด
+                            <i class="fa-solid fa-table-cells-large me-2 text-primary fs-5"></i> ทั้งหมด
                         </a></li>
                         <li><a class="dropdown-item rounded-3 py-2 fw-semibold tab-filter d-flex align-items-center mb-1" href="#" data-filter="service">
-                            <i class="bi bi-person-walking me-2 text-info fs-5"></i> บริการนวด
+                            <i class="fa-solid fa-person-walking me-2 text-info fs-5"></i> บริการนวด
                         </a></li>
                         <li><a class="dropdown-item rounded-3 py-2 fw-semibold tab-filter d-flex align-items-center" href="#" data-filter="product">
-                            <i class="bi bi-box-seam me-2 text-success fs-5"></i> สินค้าปลีก
+                            <i class="fa-solid fa-box me-2 text-success fs-5"></i> สินค้าปลีก
                         </a></li>
                         <li><a class="dropdown-item rounded-3 py-2 fw-semibold tab-filter d-flex align-items-center" href="#" data-filter="package">
-                            <i class="bi bi-wallet me-2 text-success fs-5"></i> ซื้อแพคเกจเพิ่ม
+                            <i class="fa-solid fa-wallet me-2 text-success fs-5"></i> ซื้อแพคเกจเพิ่ม
                         </a></li>
                     </ul>
                 </div>
@@ -39,7 +39,7 @@
                 
                 <label class="form-label fw-bold small text-muted text-uppercase" style="letter-spacing: 0.5px;">ข้อมูลลูกค้า</label>
                 <button class="btn w-100 text-start d-flex justify-content-between align-items-center shadow-sm border border-primary-subtle rounded-4 py-3 fw-bold bg-primary-subtle text-primary" type="button" data-bs-toggle="modal" data-bs-target="#newCustomerModal">
-                    <span class="d-flex align-items-center"><i class="bi bi-person-plus-fill me-2 fs-5"></i> <span class="ms-1">เพิ่มลูกค้าใหม่</span></span>
+                    <span class="d-flex align-items-center"><i class="fa-solid fa-user-plus me-2 fs-5"></i> <span class="ms-1">เพิ่มลูกค้าใหม่</span></span>
                 </button>
             </div>
         </div>
@@ -88,7 +88,7 @@
     <div class="col-12 col-lg-4">
         <div class="card border-0 shadow-sm rounded-4 h-100">
             <div class="card-body p-3 d-flex flex-column">
-                <h5 class="fw-bold mb-3"><i class="bi bi-receipt me-2"></i> รายการปัจจุบัน</h5>
+                <h5 class="fw-bold mb-3"><i class="fa-solid fa-receipt me-2"></i> รายการปัจจุบัน</h5>
                 <div id="booking-context-banner" class="alert alert-info rounded-3 py-2 d-none">
                     <strong>รับมาจากหน้าจองคิว</strong><br>
                     <span id="booking-context-text" class="small"></span>
@@ -98,9 +98,14 @@
                     <div class="col-7">
                         <label class="small fw-bold text-muted">ลูกค้า</label>
                         <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white"><i class="bi bi-person"></i></span>
-                            <input type="text" id="customer-name-input" class="form-control rounded-end-3" placeholder="Walk-in / ชื่อหรือเบอร์">
+                            <span class="input-group-text bg-white"><i class="fa-solid fa-user"></i></span>
+                            <input type="text" id="customer-name-input" list="customers-datalist" class="form-control rounded-end-3" placeholder="Walk-in / ชื่อหรือเบอร์">
                         </div>
+                        <datalist id="customers-datalist">
+                            @foreach($customers as $c)
+                            <option value="{{ $c['name'] }}">{{ $c['phone'] }}</option>
+                            @endforeach
+                        </datalist>
                         <input type="hidden" id="customer-id-hidden" value="">
                         <div class="small text-muted mt-1" id="customer-match-hint">Walk-in</div>
                         <div class="small text-primary mt-1" id="package-balance-hint"></div>
@@ -133,9 +138,9 @@
                 </div>
 
                 <div class="mt-3">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span class="text-muted">รวมเงิน</span>
-                        <span class="fw-bold" id="subtotal">0.00 ฿</span>
+                    <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                        <span class="text-muted fw-bold">รวมเงิน</span>
+                        <span class="fw-bold fs-5 text-primary" id="subtotal">0.00 ฿</span>
                     </div>
                     <div class="d-flex justify-content-between mb-3 align-items-center">
                         <span class="text-muted">ส่วนลด</span>
@@ -168,22 +173,22 @@
                     <div class="row g-2">
                         <div class="col-4 text-center">
                             <button class="btn btn-outline-secondary w-100 rounded-3 py-2 active payment-btn" data-pay="cash">
-                                <i class="bi bi-cash d-block fs-4"></i> เงินสด
+                                <i class="fa-solid fa-money-bill d-block fs-4"></i> เงินสด
                             </button>
                         </div>
                         <div class="col-4 text-center">
                             <button class="btn btn-outline-secondary w-100 rounded-3 py-2 payment-btn" data-pay="transfer">
-                                <i class="bi bi-qr-code-scan d-block fs-4"></i> โอนเงิน
+                                <i class="fa-solid fa-qrcode d-block fs-4"></i> โอนเงิน
                             </button>
                         </div>
                         <div class="col-4 text-center">
                             <button class="btn btn-outline-secondary w-100 rounded-3 py-2 payment-btn" data-pay="card">
-                                <i class="bi bi-credit-card d-block fs-4"></i> บัตร
+                                <i class="fa-solid fa-credit-card d-block fs-4"></i> บัตร
                             </button>
                         </div>
                         <div class="col-12 mt-2">
                             <button class="btn btn-outline-secondary w-100 rounded-3 py-2 payment-btn" data-pay="wallet">
-                                <i class="bi bi-wallet2 fs-5 me-2"></i> กระเป๋าเงิน (Wallet)
+                                <i class="fa-solid fa-wallet fs-5 me-2"></i> กระเป๋าเงิน (Wallet)
                             </button>
                         </div>
                     </div>
@@ -191,14 +196,14 @@
                     <div class="mt-3">
                         <label class="small fw-bold text-muted">ใช้แต้มเป็นส่วนลด (Points Redeem)</label>
                         <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white"><i class="bi bi-star-fill text-warning"></i></span>
+                            <span class="input-group-text bg-white"><i class="fa-solid fa-star text-warning"></i></span>
                             <input type="number" id="points-redeem" class="form-control" placeholder="จำนวนแต้มที่ต้องการใช้" min="0" onchange="calculateTotal()">
                         </div>
                         <small class="text-muted" style="font-size: 11px;">1 แต้ม = ส่วนลด 1 บาท</small>
                     </div>
 
                     <button class="btn btn-primary w-100 btn-lg rounded-pill mt-3 py-3 fw-bold shadow-sm" id="checkout-btn" onclick="checkout()">
-                        <i class="bi bi-check-circle-fill me-2"></i> ชำระเงิน
+                        <i class="fa-solid fa-circle-check me-2"></i> ชำระเงิน
                     </button>
                 </div>
             </div>
@@ -213,7 +218,7 @@
             <div class="modal-header border-0 bg-white px-4 pt-4 pb-2">
                 <div class="d-flex align-items-center">
                     <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
-                        <i class="bi bi-person-plus-fill fs-4"></i>
+                        <i class="fa-solid fa-user-plus fs-4"></i>
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold mb-0">เพิ่มข้อมูลลูกค้าใหม่</h5>
@@ -254,7 +259,7 @@
                         <div class="col-md-4">
                             <label class="form-label fw-bold small text-muted">เบอร์โทรศัพท์ <span class="text-danger">*</span></label>
                             <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
-                                <span class="input-group-text bg-white border-0 text-muted"><i class="bi bi-telephone"></i></span>
+                                <span class="input-group-text bg-white border-0 text-muted"><i class="fa-solid fa-phone"></i></span>
                                 <input type="tel" class="form-control border-0 fs-6" placeholder="08X-XXX-XXXX">
                             </div>
                         </div>
@@ -262,7 +267,7 @@
                         <div class="col-md-12">
                             <label class="form-label fw-bold small text-muted">Line ID</label>
                             <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
-                                <span class="input-group-text bg-white border-0 text-success"><i class="bi bi-line"></i></span>
+                                <span class="input-group-text bg-white border-0 text-success"><i class="fa-brands fa-line"></i></span>
                                 <input type="text" class="form-control border-0 fs-6" placeholder="LINE ID ของลูกค้า">
                             </div>
                         </div>
@@ -281,7 +286,7 @@
             </div>
             <div class="modal-footer border-0 px-4 pb-4 pt-2 bg-transparent justify-content-end">
                 <button type="button" class="btn btn-white text-muted rounded-pill px-4 fw-bold shadow-sm border me-2" data-bs-dismiss="modal">ยกเลิก</button>
-                <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" onclick="saveNewCustomer()"><i class="bi bi-check-circle-fill me-2"></i> บันทึกลูกค้า</button>
+                <button type="button" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm" onclick="saveNewCustomer()"><i class="fa-solid fa-circle-check me-2"></i> บันทึกลูกค้า</button>
             </div>
         </div>
     </div>
@@ -292,7 +297,7 @@
         <div class="modal-content rounded-4 border-0 shadow">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold">
-                    <i class="bi bi-printer me-2 text-primary"></i>พิมพ์ใบเสร็จ
+                    <i class="fa-solid fa-print me-2 text-primary"></i>พิมพ์ใบเสร็จ
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -306,7 +311,7 @@
             <div class="modal-footer border-0">
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-4" id="skip-print-btn">ไม่พิมพ์ตอนนี้</button>
                 <button type="button" class="btn btn-primary rounded-pill px-4" id="print-now-btn">
-                    <i class="bi bi-printer me-1"></i> พิมพ์ตอนนี้
+                    <i class="fa-solid fa-print me-1"></i> พิมพ์ตอนนี้
                 </button>
             </div>
         </div>
@@ -663,9 +668,9 @@
         
         packageBalanceHintEl.innerHTML = `
             แพ็กเกจคงเหลือ: ${previews.join(', ')}${tail}<br>
-            <span class="text-primary"><i class="bi bi-wallet2"></i> กระเป๋าเงิน: ${wallet}฿</span> | 
-            <span class="text-warning"><i class="bi bi-star-fill"></i> ${points} pts</span> |
-            <span class="text-info"><i class="bi bi-award-fill"></i> แสตมป์: ${stamps} ดวง</span>
+            <span class="text-primary"><i class="fa-solid fa-wallet"></i> กระเป๋าเงิน: ${wallet}฿</span> | 
+            <span class="text-warning"><i class="fa-solid fa-star"></i> ${points} pts</span> |
+            <span class="text-info"><i class="fa-solid fa-award"></i> แสตมป์: ${stamps} ดวง</span>
         `;
     }
 
@@ -731,7 +736,7 @@
                     <button class="btn btn-sm btn-white border rounded-circle p-0" style="width:24px;height:24px" onclick="updateQty('${item.id}', 1)">+</button>
                 </div>
                 <div class="fw-bold text-end" style="min-width: 60px;">${(item.price * item.qty).toLocaleString()}</div>
-                <button class="btn btn-sm text-danger ms-2" onclick="remove('${item.id}')"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-sm text-danger ms-2" onclick="remove('${item.id}')"><i class="fa-solid fa-trash-can"></i></button>
             </div>
         `).join('');
 
@@ -1082,11 +1087,11 @@
             if (bookingContext.reCheckout === true) {
                 // manager/owner re-checkout: ให้กดชำระได้
                 checkoutBtn.disabled = false;
-                checkoutBtn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i> ชำระเงินใหม่';
+                checkoutBtn.innerHTML = '<i class="fa-solid fa-rotate-right me-2"></i> ชำระเงินใหม่';
                 checkoutBtn.style.background = 'linear-gradient(135deg, #e67e22, #d35400)';
             } else {
                 checkoutBtn.disabled = true;
-                checkoutBtn.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i> คิวนี้ชำระแล้ว';
+                checkoutBtn.innerHTML = '<i class="fa-solid fa-circle-check me-2"></i> คิวนี้ชำระแล้ว';
             }
         }
     }
@@ -1101,7 +1106,7 @@
 
             const iconHtml = btn.querySelector('i').outerHTML;
             const textHtml = btn.textContent.trim();
-            document.getElementById('categoryDropdownBtn').innerHTML = `<span class="d-flex align-items-center">${iconHtml} <span class="ms-1">${textHtml}</span></span> <i class="bi bi-chevron-down text-muted"></i>`;
+            document.getElementById('categoryDropdownBtn').innerHTML = `<span class="d-flex align-items-center">${iconHtml} <span class="ms-1">${textHtml}</span></span> <i class="fa-solid fa-chevron-down text-muted"></i>`;
 
             const filter = btn.dataset.filter;
             document.querySelectorAll('.item-card-wrap').forEach(item => {

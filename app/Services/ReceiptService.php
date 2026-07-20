@@ -367,6 +367,28 @@ class ReceiptService
                 $walletService->topUp((int)$order->branch_id, (int)$order->customer_id, (float)$order->grand_total, 'คืนเงินจากการ Void บิล (#' . $orderNo . ')');
             }
 
+            // หักเงิน Wallet คืน กรณีบิลนี้มีการซื้อแพ็กเกจเติมเงิน (Wallet Top-up)
+            if ($order->customer_id && \Illuminate\Support\Facades\Schema::hasTable('wallet_transactions')) {
+                $walletTopups = DB::table('wallet_transactions')
+                    ->where('order_id', $orderId)
+                    ->where('type', 'topup')
+                    ->where('note', 'like', 'ซื้อแพ็กเกจเติมเงิน:%')
+                    ->get();
+                    
+                foreach ($walletTopups as $tx) {
+                    if ($tx->amount > 0) {
+                        $walletService = app(\App\Services\WalletService::class);
+                        try {
+                            $walletService->spend((int)$order->branch_id, (int)$order->customer_id, (float)$tx->amount, $orderId, 'หักเงินคืนจากการ Void บิลซื้อแพ็กเกจ (#' . $orderNo . ')');
+                        } catch (\Exception $e) {
+                            // If balance is not enough, maybe we just set to 0 or throw?
+                            // Let it throw so they can't void if customer already spent the wallet credit.
+                            throw new \Exception('ไม่สามารถ Void บิลนี้ได้เนื่องจากลูกค้าใช้เครดิต Wallet ไปแล้ว (ยอดเงินไม่พอหักคืน)');
+                        }
+                    }
+                }
+            }
+
             // จัดการแต้มสะสม
             $pointService = app(\App\Services\PointService::class);
             if ($order->customer_id && \Illuminate\Support\Facades\Schema::hasColumn('orders', 'points_earned')) {
@@ -388,15 +410,15 @@ class ReceiptService
                     ->get();
                     
                 foreach($stamps as $stamp) {
-                    if ($stamp->stamps_earned > 0) {
+                    if ($stamp->type === 'earn') {
                         DB::table('customers')
                             ->where('id', $order->customer_id)
-                            ->decrement('total_stamps', $stamp->stamps_earned);
+                            ->decrement('total_stamps', $stamp->stamps);
                     }
-                    if ($stamp->stamps_redeemed > 0) {
+                    if ($stamp->type === 'redeem') {
                         DB::table('customers')
                             ->where('id', $order->customer_id)
-                            ->increment('total_stamps', $stamp->stamps_redeemed);
+                            ->increment('total_stamps', $stamp->stamps);
                     }
                 }
                 

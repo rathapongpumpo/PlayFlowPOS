@@ -265,11 +265,15 @@ class PosService
                     ->where('id', $customerId)
                     ->increment('total_stamps', 1);
 
+                $currentStamps = DB::table('customers')->where('id', $customerId)->value('total_stamps') ?? 1;
+
                 DB::table('customer_stamps')->insert([
                     'branch_id' => $branchId,
                     'customer_id' => $customerId,
                     'order_id' => $orderId,
-                    'stamps_earned' => 1,
+                    'type' => 'earn',
+                    'stamps' => 1,
+                    'balance_after' => $currentStamps,
                     'note' => 'แสตมป์จากการใช้บริการ (บิล: ' . $orderNo . ')',
                     'created_at' => now(),
                     'updated_at' => now(),
