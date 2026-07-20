@@ -858,7 +858,7 @@
                 <span class="selected-service-chip">
                     ${service.name}
                     <button type="button" onclick="removeService('${serviceId}')" aria-label="ลบบริการ">
-                        <i class="bi bi-x-circle-fill"></i>
+                        <i class="fa-solid fa-circle-xmark"></i>
                     </button>
                 </span>
             `;
@@ -915,7 +915,6 @@
         endTimeEl.value = normalizeTimeValue(booking.end || addMinutes(startTimeEl.value, getTotalDuration(booking.serviceIds)), addMinutes(startTimeEl.value, getTotalDuration(booking.serviceIds)));
         statusSelectEl.value = booking.status || 'waiting';
         selectedServiceIds = [...(booking.serviceIds || [])].map(normalizeId).slice(0, MAX_BOOKING_SERVICES);
-        if (!selectedServiceIds.length && defaultServiceId) selectedServiceIds = [defaultServiceId];
         renderSelectedServices();
         setModalMode(isEditing);
 
@@ -1292,7 +1291,7 @@
 
         editingBookingId = null;
         const startTime = normalizeTimeValue(data.time || DEFAULT_START_TIME, DEFAULT_START_TIME);
-        const initialServices = defaultServiceId ? [defaultServiceId] : [];
+        const initialServices = [];
         const duration = getTotalDuration(initialServices);
 
         fillModal({

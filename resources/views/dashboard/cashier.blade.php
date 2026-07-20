@@ -233,12 +233,12 @@
                         <div class="metric-block">
                             <div class="metric-title">วันนี้</div>
                             <div class="metric-value">{{ number_format((int) $masseuse['today_income']) }} ฿</div>
-                            <div class="metric-meta">ค่ามือ {{ number_format((int) $masseuse['today_commission']) }} ฿ | {{ number_format((int) $masseuse['today_queue_count']) }} คิว</div>
+                            <div class="metric-meta">ค่ามือ {{ number_format((int) ($masseuse['today_commission'] + $masseuse['today_top_up'])) }} ฿ | {{ number_format((int) $masseuse['today_queue_count']) }} คิว</div>
                         </div>
                         <div class="metric-block">
                             <div class="metric-title">เมื่อวาน</div>
                             <div class="metric-value">{{ number_format((int) $masseuse['yesterday_income']) }} ฿</div>
-                            <div class="metric-meta">ค่ามือ {{ number_format((int) $masseuse['yesterday_commission']) }} ฿ | {{ number_format((int) $masseuse['yesterday_queue_count']) }} คิว</div>
+                            <div class="metric-meta">ค่ามือ {{ number_format((int) ($masseuse['yesterday_commission'] + $masseuse['yesterday_top_up'])) }} ฿ | {{ number_format((int) $masseuse['yesterday_queue_count']) }} คิว</div>
                         </div>
                     </div>
                 </article>

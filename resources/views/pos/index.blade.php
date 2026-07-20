@@ -115,6 +115,7 @@
                             <div class="col-6">
                                 <label class="small fw-bold text-muted">หมอนวด (คนทำ)</label>
                                 <select id="staff-select" class="form-select form-select-sm rounded-3">
+                                    <option value="">-- ไม่ระบุ --</option>
                                     @foreach($staff as $s)
                                     <option value="{{ $s['id'] }}">{{ $s['name'] }}</option>
                                     @endforeach

@@ -48,14 +48,21 @@ class DashboardService
         $todayServiceSales = (int) round($this->sumSalesByItemType($resolvedBranchId, $today, $tomorrow, 'service'));
         $todayPackageSales = (int) round($this->sumSalesByItemType($resolvedBranchId, $today, $tomorrow, 'package'));
         $todayTotalCombinedSales = $todayServiceSales + $todayPackageSales;
-        
-        $dailyMasseuseFee = (int) round($this->sumCommissions($resolvedBranchId, $today, $tomorrow));
-        $monthlyMasseuseFee = (int) round($this->sumCommissions($resolvedBranchId, $monthStart));
-        $netProfit = (int) round($monthlySales) - $monthlyMasseuseFee;
 
         $todayMasseuses = $this->buildMasseuseSummaryRows($resolvedBranchId, $today, $tomorrow);
         $yesterdayMasseuses = $this->buildMasseuseSummaryRows($resolvedBranchId, $yesterday, $today);
         $masseuseComparisons = $this->mergeMasseuseComparisons($todayMasseuses, $yesterdayMasseuses);
+        
+        $dailyMasseuseFee = (int) round(array_reduce($todayMasseuses, function($carry, $m) {
+            return $carry + $m['commission'] + $m['top_up'];
+        }, 0));
+
+        $monthlyMasseuses = $this->buildMasseuseSummaryRows($resolvedBranchId, $monthStart, $tomorrow);
+        $monthlyMasseuseFee = (int) round(array_reduce($monthlyMasseuses, function($carry, $m) {
+            return $carry + $m['commission'] + $m['top_up'];
+        }, 0));
+        
+        $netProfit = (int) round($monthlySales) - $monthlyMasseuseFee;
 
         // New vs Old Customers for today
         $todayActiveCustomers = DB::table('orders')
@@ -281,7 +288,7 @@ class DashboardService
     {
         return $query->where(function (Builder $statusQuery) use ($alias): void {
             $statusQuery
-                ->where($alias . '.status', 'paid')
+                ->whereIn($alias . '.status', ['paid', 'completed'])
                 ->orWhereNull($alias . '.status');
         });
     }
@@ -361,12 +368,11 @@ class DashboardService
             ->leftJoin('masseuses as m', 'm.id', '=', 'oi.masseuse_id')
             ->where('o.branch_id', $branchId)
             ->where('oi.item_type', 'service')
-            ->whereNotNull('oi.masseuse_id')
             ->where('o.created_at', '>=', $from)
             ->where('o.created_at', '<', $to)
             ->selectRaw(
-                "oi.masseuse_id as id, " .
-                "COALESCE(NULLIF(m.nickname, ''), m.full_name, CONCAT('Masseuse #', oi.masseuse_id)) as name, " .
+                "COALESCE(oi.masseuse_id, 0) as id, " .
+                "IF(oi.masseuse_id IS NULL, 'ไม่ระบุ', COALESCE(NULLIF(m.nickname, ''), m.full_name, CONCAT('Masseuse #', oi.masseuse_id))) as name, " .
                 "SUM(oi.qty * oi.unit_price) as income, " .
                 "COUNT(DISTINCT o.id) as queue_count"
             )
@@ -382,7 +388,7 @@ class DashboardService
             ->where('o.branch_id', $branchId)
             ->where('o.created_at', '>=', $from)
             ->where('o.created_at', '<', $to)
-            ->selectRaw('c.masseuse_id as id, SUM(c.amount) as commission')
+            ->selectRaw('COALESCE(c.masseuse_id, 0) as id, SUM(c.amount) as commission')
             ->groupBy('c.masseuse_id');
 
         $commissions = $this->applyPaidScope($commissionQuery, 'o')
@@ -393,11 +399,10 @@ class DashboardService
             ->join('order_items as oi', 'o.id', '=', 'oi.order_id')
             ->where('o.branch_id', $branchId)
             ->where('oi.item_type', 'service')
-            ->whereNotNull('oi.masseuse_id')
             ->where('o.created_at', '>=', $from)
             ->where('o.created_at', '<', $to)
             ->where('o.tip_amount', '>', 0)
-            ->selectRaw('oi.masseuse_id, o.id as order_id, o.tip_amount')
+            ->selectRaw('COALESCE(oi.masseuse_id, 0) as masseuse_id, o.id as order_id, o.tip_amount')
             ->groupBy('o.id', 'oi.masseuse_id', 'o.tip_amount');
 
         $tipsData = $this->applyPaidScope($tipsQuery, 'o')->get();
@@ -421,29 +426,43 @@ class DashboardService
             }
         }
 
-        $masseuseData = DB::table('masseuses')
+        $masseuseData = DB::table('staff_shifts')
             ->where('branch_id', $branchId)
-            ->get(['id', 'base_salary'])
+            ->where('shift_date', '>=', $from->toDateString())
+            ->where('shift_date', '<', $to->toDateString())
+            ->selectRaw('masseuse_id as id, SUM(guarantee_amount) as base_salary')
+            ->groupBy('masseuse_id')
+            ->get()
             ->keyBy('id');
+
+        $masseuseBaseSalaries = DB::table('masseuses')
+            ->where('branch_id', $branchId)
+            ->pluck('base_salary', 'id');
 
         $allIds = array_values(array_unique(array_merge(
             array_map('intval', array_keys($revenues->all())),
             array_map('intval', array_keys($commissions->all()))
         )));
 
+        $daysInPeriod = max(1, (int) $from->diffInDays($to));
+
         $rows = [];
         foreach ($allIds as $id) {
             $revenue = $revenues->get($id);
             $commission = $commissions->get($id);
             
-            $baseSalary = (float) ($masseuseData->get($id)->base_salary ?? 0);
+            $shiftSalary = (float) ($masseuseData->get($id)->base_salary ?? 0);
+            $fallbackSalary = (float) ((($masseuseBaseSalaries->get($id) ?? 0) / 30) * $daysInPeriod);
+            $baseSalary = $shiftSalary > 0 ? $shiftSalary : $fallbackSalary;
+
             $commissionAmt = (float) ($commission->commission ?? 0);
-            $tipAmt = (float) ($tipsByMasseuse[$id] ?? 0);
             $topUp = max(0.0, $baseSalary - $commissionAmt);
+
+            $tipAmt = (float) ($tipsByMasseuse[$id] ?? 0);
 
             $rows[$id] = [
                 'id' => (int) $id,
-                'name' => (string) ($revenue->name ?? ('Masseuse #' . $id)),
+                'name' => $revenue->name ?? ($id === 0 ? 'ไม่ระบุ' : ('Masseuse #' . $id)),
                 'income' => (float) ($revenue->income ?? 0),
                 'commission' => $commissionAmt,
                 'tip' => $tipAmt,
