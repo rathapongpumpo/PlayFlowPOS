@@ -60,6 +60,15 @@
             'deleteAction' => route('masseuse.destroy', ['staffId' => $formRecord['id']]),
         ])
     </div>
+    
+    <div class="col-12 mt-4">
+        @include('masseuse.partials.shifts', [
+            'formRecord' => $formRecord,
+            'shifts' => $shifts,
+            'month' => $month,
+            'year' => $year
+        ])
+    </div>
 </div>
 @endsection
 

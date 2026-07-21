@@ -1,10 +1,6 @@
-@extends('layouts.main')
-
-@section('title', 'จัดการตารางงาน (Shifts) - PlayFlow POS')
-
 @push('head')
 <style>
-    .shift-page {
+    .shift-section, .custom-modal {
         --sp-primary: #1f73e0;
         --sp-primary-light: rgba(31, 115, 224, 0.1);
         --sp-success: #14b89a;
@@ -24,7 +20,7 @@
         box-shadow: 0 8px 30px rgba(31, 115, 224, 0.04);
         border: 1px solid rgba(255,255,255,0.8);
         backdrop-filter: blur(10px);
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
     }
 
     .shift-title {
@@ -121,26 +117,6 @@
         border-radius: 8px;
         font-weight: 600;
         font-size: 0.9rem;
-    }
-
-    .masseuse-avatar-wrapper {
-        width: 46px;
-        height: 46px;
-        background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--sp-muted);
-        font-size: 1.2rem;
-        flex-shrink: 0;
-        border: 2px solid white;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-    }
-    
-    .masseuse-avatar-wrapper.active {
-        background: var(--sp-primary-light);
-        color: var(--sp-primary);
     }
 
     .time-slot {
@@ -274,18 +250,40 @@
 </style>
 @endpush
 
-@section('content')
-<div class="row g-3 shift-page">
-    
+<div class="row g-3 shift-section mt-2">
     <!-- Header Section -->
     <div class="col-12">
         <div class="shift-header-wrapper d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
                 <h3 class="shift-title">
                     <span class="shift-title-icon"><i class="fa-solid fa-calendar-check"></i></span>
-                    จัดการตารางงานหมอนวด
+                    จัดการตารางงาน
                 </h3>
-                <div class="shift-subtitle">กำหนดเวลาเข้างานของพนักงานประจำเดือน <strong class="text-primary">{{ $month }}/{{ $year }}</strong></div>
+                <div class="shift-subtitle">
+                    กำหนดเวลาเข้างานประจำเดือน 
+                    <strong class="text-primary">{{ $month }}/{{ $year }}</strong>
+                    <div class="d-inline-block ms-2">
+                        <form method="GET" action="{{ url()->current() }}" class="d-inline">
+                            @foreach(request()->except(['month', 'year']) as $key => $value)
+                                <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                            @endforeach
+                            <select name="month" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()">
+                                @for($i = 1; $i <= 12; $i++)
+                                    <option value="{{ sprintf('%02d', $i) }}" {{ $month == sprintf('%02d', $i) ? 'selected' : '' }}>
+                                        {{ date('F', mktime(0, 0, 0, $i, 10)) }}
+                                    </option>
+                                @endfor
+                            </select>
+                            <select name="year" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()">
+                                @for($i = date('Y') - 1; $i <= date('Y') + 1; $i++)
+                                    <option value="{{ $i }}" {{ $year == $i ? 'selected' : '' }}>
+                                        {{ $i }}
+                                    </option>
+                                @endfor
+                            </select>
+                        </form>
+                    </div>
+                </div>
             </div>
             <button class="btn-add-shift" data-bs-toggle="modal" data-bs-target="#addShiftModal">
                 <i class="fa-solid fa-plus"></i> เพิ่มกะการทำงาน
@@ -310,11 +308,10 @@
                 <table class="table shift-table table-borderless">
                 <thead>
                     <tr>
-                        <th class="ps-4" style="width: 15%;">วันที่เข้างาน</th>
-                        <th style="width: 25%;">พนักงาน (หมอนวด)</th>
-                        <th style="width: 20%;">เวลาเริ่ม - เวลาจบ</th>
-                        <th class="text-center" style="width: 20%;">ค่ามือที่ได้ / การันตี</th>
-                        <th class="text-center" style="width: 10%;">เงินชดเชย</th>
+                        <th class="ps-4" style="width: 25%;">วันที่เข้างาน</th>
+                        <th style="width: 25%;">เวลาเริ่ม - เวลาจบ</th>
+                        <th class="text-center" style="width: 25%;">ค่ามือที่ได้ / การันตี</th>
+                        <th class="text-center" style="width: 15%;">เงินชดเชย</th>
                         <th class="text-end pe-4" style="width: 10%;">จัดการ</th>
                     </tr>
                 </thead>
@@ -325,19 +322,6 @@
                                 <span class="shift-date-badge">
                                     <i class="fa-regular fa-calendar me-1"></i> {{ \Carbon\Carbon::parse($shift->shift_date)->format('d/m/Y') }}
                                 </span>
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="masseuse-avatar-wrapper active">
-                                        <i class="fa-solid fa-user-nurse"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold fs-6">{{ $shift->nickname ?: $shift->full_name }}</div>
-                                        <div class="text-muted small" style="font-size: 0.8rem;">
-                                            <i class="fa-solid fa-id-card me-1 opacity-50"></i> {{ $shift->full_name }}
-                                        </div>
-                                    </div>
-                                </div>
                             </td>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
@@ -384,13 +368,13 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="p-0">
+                            <td colspan="5" class="p-0">
                                 <div class="empty-state">
                                     <div class="empty-state-icon">
                                         <i class="fa-solid fa-calendar-xmark"></i>
                                     </div>
                                     <h5 class="fw-bold text-dark mb-2">ไม่มีตารางงานในเดือนนี้</h5>
-                                    <p class="text-muted mb-4">ยังไม่ได้กำหนดกะการทำงานให้พนักงานในระบบ</p>
+                                    <p class="text-muted mb-4">พนักงานยังไม่มีกะการทำงานในเดือนที่เลือก</p>
                                     <button class="btn-add-shift shadow-none" data-bs-toggle="modal" data-bs-target="#addShiftModal">
                                         <i class="fa-solid fa-plus"></i> เพิ่มกะแรกของคุณ
                                     </button>
@@ -400,6 +384,7 @@
                     @endforelse
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 </div>
@@ -414,19 +399,8 @@
             </div>
             <form action="{{ route('masseuse.shifts.store') }}" method="POST">
                 @csrf
+                <input type="hidden" name="masseuse_id" value="{{ $formRecord['id'] }}">
                 <div class="modal-body">
-                    <div class="mb-4">
-                        <label class="form-label">
-                            <i class="fa-solid fa-user-nurse text-primary me-1"></i> เลือกพนักงาน (หมอนวด)
-                        </label>
-                        <select name="masseuse_id" class="form-select" required>
-                            <option value="">-- กรุณาเลือก --</option>
-                            @foreach($masseuses as $m)
-                                <option value="{{ $m->id }}">{{ $m->nickname ?: $m->full_name }} ({{ $m->full_name }})</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    
                     <div class="mb-4">
                         <label class="form-label">
                             <i class="fa-regular fa-calendar text-primary me-1"></i> วันที่เข้างาน
@@ -467,6 +441,7 @@
         </div>
     </div>
 </div>
+
 <!-- Edit Shift Modal -->
 <div class="modal fade custom-modal" id="editShiftModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
@@ -512,7 +487,6 @@
         </div>
     </div>
 </div>
-@endsection
 
 @push('scripts')
 <script>
@@ -520,19 +494,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const editBtns = document.querySelectorAll('.edit-shift-btn');
     const editForm = document.getElementById('editShiftForm');
     
-    editBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const id = this.dataset.id;
-            const start = this.dataset.start;
-            const end = this.dataset.end;
-            const guarantee = this.dataset.guarantee;
-            
-            editForm.action = `/masseuse/shifts/${id}`;
-            document.getElementById('edit_start_time').value = start;
-            document.getElementById('edit_end_time').value = end;
-            document.getElementById('edit_guarantee_amount').value = guarantee;
+    if(editBtns && editForm) {
+        editBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                const start = this.dataset.start;
+                const end = this.dataset.end;
+                const guarantee = this.dataset.guarantee;
+                
+                editForm.action = `/masseuse/shifts/${id}`;
+                document.getElementById('edit_start_time').value = start;
+                document.getElementById('edit_end_time').value = end;
+                document.getElementById('edit_guarantee_amount').value = guarantee;
+            });
         });
-    });
+    }
 });
 </script>
 @endpush

@@ -77,7 +77,6 @@ Route::middleware(['auth', 'shop.access'])->group(function (): void {
         Route::post('/masseuse', 'MasseuseController@store')->name('masseuse.store');
         Route::put('/masseuse/{staffId}', 'MasseuseController@update')->name('masseuse.update');
         Route::delete('/masseuse/{staffId}', 'MasseuseController@destroy')->name('masseuse.destroy');
-        Route::get('/masseuse/shifts', 'MasseuseShiftController@index')->name('masseuse.shifts');
         Route::post('/masseuse/shifts', 'MasseuseShiftController@store')->name('masseuse.shifts.store');
         Route::put('/masseuse/shifts/{shiftId}', 'MasseuseShiftController@update')->name('masseuse.shifts.update');
         Route::delete('/masseuse/shifts/{shiftId}', 'MasseuseShiftController@destroy')->name('masseuse.shifts.destroy');

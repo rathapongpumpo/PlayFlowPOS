@@ -64,7 +64,35 @@ class MasseuseController extends Controller
         abort_if(!($pageData['moduleReady'] ?? false), 404);
         abort_if(!is_array($formRecord), 404);
 
-        return view('masseuse.edit', array_merge($pageData, ['formRecord' => $formRecord]));
+        $month = $request->query('month', now()->format('m'));
+        $year = $request->query('year', now()->format('Y'));
+        $activeBranchId = $pageData['activeBranchId'] ?? 0;
+
+        $shifts = \Illuminate\Support\Facades\DB::table('staff_shifts')
+            ->where('masseuse_id', $staffId)
+            ->where('branch_id', $activeBranchId)
+            ->whereMonth('shift_date', $month)
+            ->whereYear('shift_date', $year)
+            ->orderBy('shift_date', 'asc')
+            ->get();
+
+        foreach ($shifts as $shift) {
+            $shift->earned_commission = \Illuminate\Support\Facades\DB::table('commissions')
+                ->where('masseuse_id', $staffId)
+                ->where('branch_id', $activeBranchId)
+                ->whereDate('calculated_at', $shift->shift_date)
+                ->sum('amount');
+                
+            $guarantee = (float)($shift->guarantee_amount ?? 0);
+            $shift->guarantee_topup = max(0, $guarantee - $shift->earned_commission);
+        }
+
+        return view('masseuse.edit', array_merge($pageData, [
+            'formRecord' => $formRecord,
+            'shifts' => $shifts,
+            'month' => $month,
+            'year' => $year,
+        ]));
     }
 
     public function updateAttendance(Request $request): RedirectResponse

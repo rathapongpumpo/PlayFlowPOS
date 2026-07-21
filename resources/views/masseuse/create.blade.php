@@ -67,6 +67,18 @@
             'formAction' => route('masseuse.store'),
         ])
     </div>
+    
+    <div class="col-12 mt-4">
+        <div class="card border-0 shadow-sm rounded-4" style="background: rgba(255,255,255,0.8); backdrop-filter: blur(10px);">
+            <div class="card-body p-4 text-center">
+                <div class="text-muted mb-3" style="font-size: 2.5rem;">
+                    <i class="fa-solid fa-calendar-xmark opacity-50"></i>
+                </div>
+                <h5 class="fw-bold text-dark">จัดการตารางงาน</h5>
+                <p class="text-muted">กรุณาบันทึกข้อมูลหมอนวดก่อน เพื่อเพิ่มและจัดการตารางงาน</p>
+            </div>
+        </div>
+    </div>
     @endif
 </div>
 @endsection
