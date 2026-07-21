@@ -113,4 +113,40 @@ class StoreOperationsController extends Controller
 
         return back()->with('success', 'ปิดร้านเรียบร้อยแล้ว ยอดต่าง: ' . number_format($difference, 2) . ' บาท');
     }
+
+    public function reopenStore(Request $request)
+    {
+        $userRole = (string) (auth()->user()->role ?? '');
+        if (!in_array($userRole, ['branch_manager', 'shop_owner', 'super_admin'])) {
+            return back()->with('error', 'คุณไม่มีสิทธิ์ในการเปิดร้านใหม่อีกครั้ง');
+        }
+
+        $branchId = $this->branchService->resolveAuthorizedBranchId(auth()->user());
+        $today = Carbon::today()->toDateString();
+        
+        $drawer = DB::table('cash_drawers')
+            ->where('branch_id', $branchId)
+            ->whereDate('opened_at', $today)
+            ->whereNotNull('closed_at')
+            ->first();
+            
+        if (!$drawer) {
+            return back()->with('error', 'ไม่พบการปิดร้านสำหรับวันนี้');
+        }
+
+        $note = $drawer->note ? $drawer->note . "\nเปิดร้านอีกครั้งโดย " . auth()->user()->username . " เมื่อ " . now()->format('Y-m-d H:i:s') : "เปิดร้านอีกครั้งโดย " . auth()->user()->username . " เมื่อ " . now()->format('Y-m-d H:i:s');
+
+        DB::table('cash_drawers')
+            ->where('id', $drawer->id)
+            ->update([
+                'closed_by' => null,
+                'closing_amount' => null,
+                'expected_amount' => null,
+                'difference' => null,
+                'note' => $note,
+                'closed_at' => null
+            ]);
+
+        return back()->with('success', 'เปิดร้านใหม่อีกครั้งเรียบร้อยแล้ว');
+    }
 }

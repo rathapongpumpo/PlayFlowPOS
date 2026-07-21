@@ -293,23 +293,23 @@
                     <div class="col-md-8">
                         <div class="summary-box">
                             <div class="row">
-                                <div class="col-6 text-end pe-4 border-end">
-                                    <div class="summary-label">ยอดที่ควรมี</div>
-                                    <div class="fw-bold text-dark fs-4">{{ number_format($drawer->expected_amount, 2) }}</div>
+                                <div class="col-6 text-end pe-2 pe-md-4 border-end">
+                                    <div class="summary-label text-wrap" style="font-size: clamp(0.7rem, 2.5vw, 0.9rem); line-height: 1.2;">ยอดที่ควรมี</div>
+                                    <div class="fw-bold text-dark text-break" style="font-size: clamp(1rem, 5vw, 1.5rem);">{{ number_format($drawer->expected_amount, 2) }}</div>
                                 </div>
-                                <div class="col-6 text-start ps-4">
-                                    <div class="summary-label">ยอดนับจริง</div>
-                                    <div class="fw-bold text-primary fs-4">{{ number_format($drawer->closing_amount, 2) }}</div>
+                                <div class="col-6 text-start ps-2 ps-md-4">
+                                    <div class="summary-label text-wrap" style="font-size: clamp(0.7rem, 2.5vw, 0.9rem); line-height: 1.2;">ยอดนับจริง</div>
+                                    <div class="fw-bold text-primary text-break" style="font-size: clamp(1rem, 5vw, 1.5rem);">{{ number_format($drawer->closing_amount, 2) }}</div>
                                 </div>
                             </div>
                             <hr>
                             <div class="summary-label">ยอดต่าง (Difference)</div>
                             @if($drawer->difference > 0)
-                                <div class="fw-bold fs-3 text-success">+{{ number_format($drawer->difference, 2) }}</div>
+                                <div class="fw-bold text-success text-break" style="font-size: clamp(1.2rem, 6vw, 2rem);">+{{ number_format($drawer->difference, 2) }}</div>
                             @elseif($drawer->difference < 0)
-                                <div class="fw-bold fs-3 text-danger">{{ number_format($drawer->difference, 2) }}</div>
+                                <div class="fw-bold text-danger text-break" style="font-size: clamp(1.2rem, 6vw, 2rem);">{{ number_format($drawer->difference, 2) }}</div>
                             @else
-                                <div class="fw-bold fs-3 text-secondary">0.00</div>
+                                <div class="fw-bold text-secondary text-break" style="font-size: clamp(1.2rem, 6vw, 2rem);">0.00</div>
                             @endif
                             
                             @if($drawer->note)
@@ -321,9 +321,20 @@
                     </div>
                 </div>
                 
-                <a href="{{ route('dashboard') }}" class="btn btn-outline-primary rounded-pill px-4 mt-3 fw-bold">
-                    <i class="bi bi-arrow-left me-2"></i> กลับสู่หน้าหลัก
-                </a>
+                <div class="d-flex flex-column align-items-center justify-content-center gap-2 mt-4">
+                    <a href="{{ route('dashboard') }}" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+                        <i class="bi bi-arrow-left me-2"></i> กลับสู่หน้าหลัก
+                    </a>
+                    
+                    @if(in_array((string)(auth()->user()->role ?? ''), ['branch_manager', 'shop_owner', 'super_admin']))
+                        <form id="reopen-form" action="{{ route('operations.reopen') }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="button" class="btn btn-warning rounded-pill px-4 fw-bold text-dark" onclick="confirmReopen()">
+                                <i class="bi bi-arrow-counterclockwise me-2"></i> เปิดร้านอีกครั้ง (สำหรับผู้จัดการ)
+                            </button>
+                        </form>
+                    @endif
+                </div>
             </div>
         @endif
         
@@ -357,6 +368,29 @@
             });
         }
     });
+
+    function confirmReopen() {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'ยืนยันการเปิดร้านอีกครั้ง?',
+                text: "สถานะการปิดร้านของวันนี้จะถูกยกเลิก และคุณสามารถทำรายการขายต่อได้ทันที",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'ยืนยัน เปิดร้าน',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('reopen-form').submit();
+                }
+            });
+        } else {
+            if (confirm('ยืนยันการเปิดร้านอีกครั้ง? สถานะการปิดร้านของวันนี้จะถูกยกเลิก')) {
+                document.getElementById('reopen-form').submit();
+            }
+        }
+    }
 </script>
 @endpush
 @endsection

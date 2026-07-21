@@ -86,6 +86,7 @@ Route::middleware(['auth', 'shop.access'])->group(function (): void {
         Route::get('/operations', 'StoreOperationsController@index')->name('operations.index');
         Route::post('/operations/open', 'StoreOperationsController@openStore')->name('operations.open');
         Route::post('/operations/close', 'StoreOperationsController@closeStore')->name('operations.close');
+        Route::post('/operations/reopen', 'StoreOperationsController@reopenStore')->name('operations.reopen');
 
         // Store Assets (Internal stock)
         Route::get('/store-assets', 'StoreAssetController@index')->name('store-assets.index');
