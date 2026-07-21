@@ -282,6 +282,15 @@
                                                 <span class="role-pill {{ $roleClasses[$user['role']] ?? 'is-cashier' }}">{{ $roleLabels[$user['role']] ?? $user['role'] }}</span>
                                             </div>
                                             <select form="user-form-{{ $user['id'] }}" name="role" class="form-select">
+                                                @php
+                                                    $hasRole = false;
+                                                    foreach($roles as $r) {
+                                                        if($r['value'] === $user['role']) $hasRole = true;
+                                                    }
+                                                @endphp
+                                                @if(!$hasRole)
+                                                    <option value="{{ $user['role'] }}" selected>{{ $roleLabels[$user['role']] ?? $user['role'] }} (ปัจจุบัน)</option>
+                                                @endif
                                                 @foreach($roles as $role)
                                                     <option value="{{ $role['value'] }}" {{ $user['role'] === $role['value'] ? 'selected' : '' }}>{{ $role['label'] }}</option>
                                                 @endforeach

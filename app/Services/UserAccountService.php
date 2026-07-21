@@ -354,7 +354,7 @@ class UserAccountService
             ]);
         }
 
-        $role = $this->normalizeAssignableRole($actor, (string) ($payload['role'] ?? 'cashier'));
+        $role = $this->normalizeAssignableRole($actor, (string) ($payload['role'] ?? 'cashier'), (string) ($existing->role ?? ''));
         $updates = ['role' => $role];
 
         if ($this->isStandaloneRole($role)) {
@@ -826,14 +826,18 @@ class UserAccountService
         ]);
     }
 
-    private function normalizeAssignableRole(User $actor, string $role): string
+    private function normalizeAssignableRole(User $actor, string $requestedRole, string $existingRole = ''): string
     {
+        if ($existingRole !== '' && $requestedRole === $existingRole) {
+            return $existingRole;
+        }
+
         $validRoles = array_column($this->getAvailableRoles($actor), 'value');
-        if (!in_array($role, $validRoles, true)) {
+        if (!in_array($requestedRole, $validRoles, true)) {
             return $validRoles[0] ?? 'cashier';
         }
 
-        return $role;
+        return $requestedRole;
     }
 
     private function resolveAssignableBranchId(User $actor, ?int $branchId, string $role): ?int

@@ -5,6 +5,10 @@
 @section('page_subtitle', $stats['branch_name'] ?? '-')
 
 @php
+    $userRole = (string) (auth()->user()->role ?? '');
+    $isManagerOrOwner = in_array($userRole, ['branch_manager', 'shop_owner', 'super_admin']);
+    $isCashier = $userRole === 'cashier';
+
     $selectedRange = $stats['selected_range'] ?? 'today';
     $selectedRangeLabel = $stats['selected_range_label'] ?? 'วันนี้';
     $rangeButtons = [
@@ -12,6 +16,9 @@
         ['value' => 'yesterday', 'label' => 'เมื่อวาน'],
         ['value' => '7d', 'label' => '7 วันย้อนหลัง'],
     ];
+    if ($isManagerOrOwner) {
+        $rangeButtons[] = ['value' => 'month', 'label' => 'เดือนนี้'];
+    }
     $todaySales = (int) ($stats['today_sales'] ?? 0);
     $monthlySales = (int) ($stats['monthly_sales'] ?? 0);
     $todayOrders = (int) ($stats['today_orders'] ?? 0);
@@ -724,12 +731,8 @@
 @endpush
 
 @section('content')
-@php
-    $isShopOwnerDashboard = (string) (auth()->user()->role ?? '') === 'shop_owner';
-@endphp
 <div class="dashboard-page">
     <div class="row g-3 g-xl-4">
-        @if(!$isShopOwnerDashboard)
         <div class="col-12">
             <section class="dash-card focus-shell">
                 <div class="focus-grid">
@@ -821,6 +824,7 @@
                         <div class="report-metric-note">ยอดขายของช่วงเวลาที่เลือกจากสาขาปัจจุบัน</div>
                     </article>
 
+                    @if($isManagerOrOwner)
                     <article class="report-metric">
                         <div class="report-metric-top">
                             <div class="report-metric-label">รายเดือน</div>
@@ -854,6 +858,7 @@
                         </div>
                         <div class="report-metric-note" style="color: #4b2385;">วันนี้: บ. {{ number_format($stats['today_service_sales'] ?? 0) }} / พ. {{ number_format($stats['today_package_sales'] ?? 0) }}</div>
                     </article>
+                    @endif
                 </div>
 
                 <div class="report-meta-row">
@@ -863,6 +868,7 @@
             </section>
         </div>
 
+        @if($isManagerOrOwner)
         <div class="col-12 col-xl-8">
             <section class="chart-card">
                 <div class="section-head">
@@ -944,9 +950,7 @@
             </section>
         </div>
 
-        @endif
-
-        <div class="col-12 {{ $isShopOwnerDashboard ? '' : 'col-xl-7' }}">
+        <div class="col-12 col-xl-7">
             <section class="service-card">
                 <div class="section-head">
                     <div>
@@ -1070,7 +1074,7 @@
                 @php $masseuses = $stats['masseuses'] ?? []; @endphp
                 @if(count($masseuses) > 0)
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table table-hover align-middle mb-0 text-nowrap">
                         <thead class="table-light text-muted" style="font-size: 0.85rem;">
                             <tr>
                                 <th class="ps-4">หมอนวด</th>
@@ -1106,6 +1110,7 @@
                 @endif
             </section>
         </div>
+        @endif
     </div>
 </div>
 @endsection
