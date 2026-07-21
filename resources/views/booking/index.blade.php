@@ -21,7 +21,7 @@
 
 <div class="booking-page booking-mobile-safe">
     <div class="card shadow-sm border-0 booking-shell">
-        <div class="card-body p-4 booking-card-body" style="overflow-x:hidden;">
+        <div class="card-body p-4 booking-card-body">
             <div class="queue-toolbar d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
                 <div class="d-flex flex-wrap gap-2 align-items-center w-100" style="max-width: 100%;">
                     <input type="date" id="queue-date" class="form-control rounded-pill px-3 shadow-none border-secondary-subtle flex-grow-1" value="{{ $selectedDate }}" style="width: auto; max-width: 160px;">
@@ -127,6 +127,7 @@
         overscroll-behavior-y: auto;
         -webkit-overflow-scrolling: touch;
         touch-action: pan-x pan-y;
+        padding-bottom: 0.5rem;
     }
     .queue-grid-row {
         display: grid;
@@ -645,8 +646,12 @@
             customerId: normalizeId(input.customerId || input.customer_id),
             customerName: input.customerName || input.customer_name || '',
             serviceIds: normalizedServiceIds,
+            serviceNames: input.serviceNames || input.service_names || [],
+            serviceSummary: input.serviceSummary || input.service_summary || '',
             staffId: normalizeId(input.staffId || input.masseuse_id),
+            staffName: input.staffName || input.staff_name || '',
             bedId: normalizeId(input.bedId || input.bed_id),
+            bedName: input.bedName || input.bed_name || '',
             start: normalizeTimeValue(input.start || input.startTime || input.start_time || DEFAULT_START_TIME, DEFAULT_START_TIME),
             end: normalizeTimeValue(input.end || input.endTime || input.end_time || DEFAULT_END_TIME, DEFAULT_END_TIME),
             status: input.status || 'waiting',
