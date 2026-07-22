@@ -791,6 +791,50 @@
                             <span class="trend-pill is-flat"><i class="fa-solid fa-rotate-right"></i> ลูกค้าเก่ากลับมาใช้บริการ</span>
                         </div>
                     </article>
+
+                    <article class="mini-stat-card">
+                        <div class="mini-stat-head">
+                            <div class="mini-stat-label">รวมนวด+แพคเกจ</div>
+                            <span class="mini-stat-icon" style="background: rgba(31, 115, 224, 0.15); color: #1b5fae;"><i class="fa-solid fa-layer-group"></i></span>
+                        </div>
+                        <div class="mini-stat-value">{{ number_format($stats['today_total_combined_sales'] ?? 0) }} ฿</div>
+                        <div class="mini-stat-meta">
+                            <span>ยอดใช้งานรวมทั้งหมดวันนี้</span>
+                        </div>
+                    </article>
+
+                    <article class="mini-stat-card">
+                        <div class="mini-stat-head">
+                            <div class="mini-stat-label">ยอดใช้บริการวันนี้</div>
+                            <span class="mini-stat-icon" style="background: rgba(20, 184, 154, 0.15); color: #14b89a;"><i class="fa-solid fa-spa"></i></span>
+                        </div>
+                        <div class="mini-stat-value">{{ number_format($todayServiceSales) }} ฿</div>
+                        <div class="mini-stat-meta">
+                            <span>ยอดขายบริการ (service) วันนี้</span>
+                        </div>
+                    </article>
+
+                    <article class="mini-stat-card">
+                        <div class="mini-stat-head">
+                            <div class="mini-stat-label">ยอดขายแพคเกจวันนี้</div>
+                            <span class="mini-stat-icon" style="background: rgba(236, 179, 44, 0.15); color: #ecb32c;"><i class="fa-solid fa-box-open"></i></span>
+                        </div>
+                        <div class="mini-stat-value">{{ number_format($todayPackageSales) }} ฿</div>
+                        <div class="mini-stat-meta">
+                            <span>ยอดขายแพคเกจวันนี้</span>
+                        </div>
+                    </article>
+
+                    <article class="mini-stat-card">
+                        <div class="mini-stat-head">
+                            <div class="mini-stat-label">ค่ามือวันนี้</div>
+                            <span class="mini-stat-icon" style="background: rgba(220, 53, 69, 0.15); color: #dc3545;"><i class="fa-solid fa-hand-holding-dollar"></i></span>
+                        </div>
+                        <div class="mini-stat-value">{{ number_format($dailyMasseuseFee) }} ฿</div>
+                        <div class="mini-stat-meta">
+                            <span>คอมมิชชั่นที่จ่ายให้หมอนวด</span>
+                        </div>
+                    </article>
                 </div>
             </section>
         </div>
@@ -960,59 +1004,6 @@
                 </div>
 
                 <div class="row g-3">
-                    {{-- === กลุ่มวันนี้ === --}}
-                    <div class="col-12">
-                        <div class="service-name" style="font-size:0.85rem; color:var(--dash-muted); margin-bottom:0.25rem;"><i class="fa-solid fa-sun" style="margin-right:0.35rem;"></i>สรุปวันนี้</div>
-                    </div>
-                    <div class="col-12 col-md-3">
-                        <div class="service-item h-100" style="border-color: rgba(31, 115, 224, 0.2);">
-                            <div class="service-row mb-2">
-                                <div>
-                                    <div class="service-name">รวมนวด+แพคเกจ</div>
-                                    <div class="service-meta">ยอดใช้งานรวมทั้งหมดวันนี้</div>
-                                </div>
-                                <span class="soft-tag"><i class="fa-solid fa-layer-group"></i> วันนี้</span>
-                            </div>
-                            <div class="spotlight-value mb-0" style="font-size: clamp(1.5rem, 1.15rem + 1vw, 2.3rem); color: #1b5fae;">{{ number_format($stats['today_total_combined_sales'] ?? 0) }} ฿</div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-3">
-                        <div class="service-item h-100">
-                            <div class="service-row mb-2">
-                                <div>
-                                    <div class="service-name">ยอดใช้บริการวันนี้</div>
-                                    <div class="service-meta">ยอดขายบริการ (service) วันนี้</div>
-                                </div>
-                                <span class="soft-tag"><i class="fa-solid fa-spa"></i> วันนี้</span>
-                            </div>
-                            <div class="spotlight-value mb-0" style="font-size: clamp(1.5rem, 1.15rem + 1vw, 2.3rem);">{{ number_format($todayServiceSales) }} ฿</div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-3">
-                        <div class="service-item h-100">
-                            <div class="service-row mb-2">
-                                <div>
-                                    <div class="service-name">ยอดขายแพคเกจวันนี้</div>
-                                    <div class="service-meta">ยอดขายแพคเกจวันนี้</div>
-                                </div>
-                                <span class="soft-tag"><i class="fa-solid fa-box-open"></i> วันนี้</span>
-                            </div>
-                            <div class="spotlight-value mb-0" style="font-size: clamp(1.5rem, 1.15rem + 1vw, 2.3rem);">{{ number_format($todayPackageSales) }} ฿</div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-3">
-                        <div class="service-item h-100">
-                            <div class="service-row mb-2">
-                                <div>
-                                    <div class="service-name">ค่ามือวันนี้</div>
-                                    <div class="service-meta">คอมมิชชั่นที่จ่ายให้หมอนวด</div>
-                                </div>
-                                <span class="soft-tag"><i class="fa-solid fa-hand-holding-dollar"></i> วันนี้</span>
-                            </div>
-                            <div class="spotlight-value mb-0" style="font-size: clamp(1.5rem, 1.15rem + 1vw, 2.3rem);">{{ number_format($dailyMasseuseFee) }} ฿</div>
-                        </div>
-                    </div>
-
                     {{-- === กลุ่มเดือนนี้ === --}}
                     <div class="col-12" style="margin-top:0.6rem;">
                         <div class="service-name mt-4" style="font-size:0.85rem; color:var(--dash-muted); margin-bottom:0.25rem;"><i class="fa-solid fa-calendar-days" style="margin-right:0.35rem;"></i>สรุปเดือนนี้</div>
