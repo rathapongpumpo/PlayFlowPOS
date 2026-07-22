@@ -363,14 +363,14 @@ class ReceiptService
                     ->get();
                 foreach ($products as $item) {
                     $stockService = app(\App\Services\ProductService::class);
-                    $stockService->addStock((int)$order->branch_id, (int)$item->item_id, (int)$item->qty, null, 'คืนสินค้าจากการ Void บิล (#' . $orderNo . ')');
+                    $stockService->addStock((int)$order->branch_id, (int)$item->item_id, (int)$item->qty, null, 'คืนสินค้าจากการ Void บิล (#' . $order->order_no . ')');
                 }
             }
 
             // คืนเงิน Wallet กรณีชำระด้วย Wallet
             if ($order->payment_method === 'wallet' && $order->customer_id) {
                 $walletService = app(\App\Services\WalletService::class);
-                $walletService->topUp((int)$order->branch_id, (int)$order->customer_id, (float)$order->grand_total, 'คืนเงินจากการ Void บิล (#' . $orderNo . ')');
+                $walletService->topUp((int)$order->branch_id, (int)$order->customer_id, (float)$order->grand_total, 'คืนเงินจากการ Void บิล (#' . $order->order_no . ')');
             }
 
             // หักเงิน Wallet คืน กรณีบิลนี้มีการซื้อแพ็กเกจเติมเงิน (Wallet Top-up)
@@ -385,7 +385,7 @@ class ReceiptService
                     if ($tx->amount > 0) {
                         $walletService = app(\App\Services\WalletService::class);
                         try {
-                            $walletService->spend((int)$order->branch_id, (int)$order->customer_id, (float)$tx->amount, $orderId, 'หักเงินคืนจากการ Void บิลซื้อแพ็กเกจ (#' . $orderNo . ')');
+                            $walletService->spend((int)$order->branch_id, (int)$order->customer_id, (float)$tx->amount, $orderId, 'หักเงินคืนจากการ Void บิลซื้อแพ็กเกจ (#' . $order->order_no . ')');
                         } catch (\Exception $e) {
                             // If balance is not enough, maybe we just set to 0 or throw?
                             // Let it throw so they can't void if customer already spent the wallet credit.
@@ -400,11 +400,11 @@ class ReceiptService
             if ($order->customer_id && \Illuminate\Support\Facades\Schema::hasColumn('orders', 'points_earned')) {
                 // คืนแต้มที่หักไป (points_redeemed)
                 if ($order->points_redeemed > 0) {
-                    $pointService->earnPoints((int)$order->branch_id, (int)$order->customer_id, (int)$order->points_redeemed, $orderId, 'คืนแต้มจากการ Void บิล (#' . $orderNo . ')');
+                    $pointService->earnPoints((int)$order->branch_id, (int)$order->customer_id, (int)$order->points_redeemed, $orderId, 'คืนแต้มจากการ Void บิล (#' . $order->order_no . ')');
                 }
                 // ลบแต้มที่ได้รับ (points_earned)
                 if ($order->points_earned > 0) {
-                    $pointService->redeemPoints((int)$order->branch_id, (int)$order->customer_id, (int)$order->points_earned, $orderId, 'ยกเลิกแต้มที่ได้รับจากการ Void บิล (#' . $orderNo . ')');
+                    $pointService->redeemPoints((int)$order->branch_id, (int)$order->customer_id, (int)$order->points_earned, $orderId, 'ยกเลิกแต้มที่ได้รับจากการ Void บิล (#' . $order->order_no . ')');
                 }
             }
 
