@@ -358,6 +358,7 @@ class CustomerService
         $this->addCustomerColumnSelect($query, 'preferred_pressure_level', 'NULL');
         $this->addCustomerColumnSelect($query, 'health_notes', 'NULL');
         $this->addCustomerColumnSelect($query, 'contraindications', 'NULL');
+        $this->addCustomerColumnSelect($query, 'total_points', '0');
 
         if ($this->tableExists('membership_tiers') && $this->hasColumn('customers', 'tier_id')) {
             $query->leftJoin('membership_tiers as mt', 'mt.id', '=', 'c.tier_id');
@@ -436,6 +437,7 @@ class CustomerService
             'preferred_pressure_level' => $row->preferred_pressure_level !== null ? (string) $row->preferred_pressure_level : null,
             'health_notes' => $row->health_notes !== null ? (string) $row->health_notes : '',
             'contraindications' => $row->contraindications !== null ? (string) $row->contraindications : '',
+            'total_points' => (int) ($row->total_points ?? 0),
             'visit_count' => (int) ($row->visit_count ?? 0),
             'total_spent' => (float) ($row->total_spent ?? 0),
             'last_visit_at' => $this->formatDateTime($row->last_visit_at),

@@ -153,7 +153,8 @@ php artisan serve
 ```
 
 ### 2. ข้อควรระวังในการเขียนโค้ด (Coding Conventions & Rules)
-1. **อย่าเขียน Logic ใน Controller:** ให้สร้างหรือเพิ่ม Business Logic ลงใน `App\Services\*` เสมอ
-2. **ใช้ Database Transactions:** การทำรายการที่ส่งผลต่อหลายตาราง (เช่น POS Checkout ที่กระทบ Order, Stock, Wallet, Points, Commission) ต้องหุ้มด้วย `DB::transaction(function() { ... })` เสมอ
-3. **ตรวจสอบ Branch Context:** ต้องกรองข้อมูลด้วย `branch_id` หรือใช้ `BranchContextService` ในทุก Query ของระดับสาขา
-4. **PHP 8.5 Compatibility Guard:** หากมีการแก้ไข Composer Script ห้ามลบ `@php scripts/apply_php85_compat.php` ออกจาก `composer.json`
+1. **ตรวจสอบโครงสร้างระบบอย่างละเอียดก่อนแก้ไขโค้ดทุกครั้ง:** ต้องตรวจสอบคอลัมน์ในตาราง (Schema) และความสัมพันธ์ของไฟล์ที่เกี่ยวข้องทั้งหมดก่อนเขียนหรือแก้ไขโค้ดทุกครั้ง เพื่อป้องกันข้อผิดพลาด 500 Server Error
+2. **อย่าเขียน Logic ใน Controller:** ให้สร้างหรือเพิ่ม Business Logic ลงใน `App\Services\*` เสมอ
+3. **ใช้ Database Transactions:** การทำรายการที่ส่งผลต่อหลายตาราง (เช่น POS Checkout ที่กระทบ Order, Stock, Wallet, Points, Commission) ต้องหุ้มด้วย `DB::transaction(function() { ... })` เสมอ
+4. **ตรวจสอบ Branch Context:** ต้องกรองข้อมูลด้วย `branch_id` หรือใช้ `BranchContextService` ในทุก Query ของระดับสาขา
+5. **PHP 8.5 Compatibility Guard:** หากมีการแก้ไข Composer Script ห้ามลบ `@php scripts/apply_php85_compat.php` ออกจาก `composer.json`

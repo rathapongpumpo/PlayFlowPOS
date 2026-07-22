@@ -198,9 +198,10 @@
                         <label class="small fw-bold text-muted">ใช้แต้มเป็นส่วนลด (Points Redeem)</label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-white"><i class="fa-solid fa-star text-warning"></i></span>
-                            <input type="number" id="points-redeem" class="form-control" placeholder="จำนวนแต้มที่ต้องการใช้" min="0" onchange="calculateTotal()">
+                            <input type="number" id="points-redeem" class="form-control" placeholder="จำนวนแต้มที่ต้องการใช้" min="0" onchange="calculate()" onkeyup="if(event.key === 'Enter') calculate()">
+                            <button class="btn btn-primary px-3 fw-bold" type="button" onclick="calculate()">ใช้แต้ม</button>
                         </div>
-                        <small class="text-muted" style="font-size: 11px;">1 แต้ม = ส่วนลด 1 บาท</small>
+                        <small class="text-muted" style="font-size: 11px;">1 แต้ม = ส่วนลด {{ $pointSettings->redeem_rate_thb ?? 1 }} บาท</small>
                     </div>
 
                     <button class="btn btn-primary w-100 btn-lg rounded-pill mt-3 py-3 fw-bold shadow-sm" id="checkout-btn" onclick="checkout()">
@@ -695,7 +696,7 @@
         }
 
         customerIdHiddenEl.value = String(matchedCustomer.id);
-        updateCustomerMatchHint(`ผูก CRM: ${matchedCustomer.name}`, 'success');
+        updateCustomerMatchHint(`ผูก CRM: ${matchedCustomer.name} (มีแต้มสะสม ${matchedCustomer.total_points || 0} pts)`, 'success');
         updateCustomerPackageHint(Number(matchedCustomer.id));
     }
 
@@ -752,8 +753,9 @@
         
         const pointsRedeemEl = document.getElementById('points-redeem');
         const pointsRedeem = parseFloat(pointsRedeemEl ? pointsRedeemEl.value : 0) || 0;
+        const pointsDiscount = pointsRedeem * {{ $pointSettings->redeem_rate_thb ?? 1 }};
         
-        const total = Math.max(0, subtotal - discount - pointsRedeem) + tip;
+        const total = Math.max(0, subtotal - discount - pointsDiscount) + tip;
 
         document.getElementById('subtotal').innerText = subtotal.toLocaleString() + ' ฿';
         document.getElementById('grand-total').innerText = total.toLocaleString() + ' ฿';
@@ -1061,7 +1063,7 @@
                 customerIdHiddenEl.value = String(bookingContext.customerId);
             }
             updateCustomerMatchHint(
-                bookingCustomer ? `ผูก CRM: ${bookingCustomer.name}` : 'ผูก CRM จากคิวเดิม',
+                bookingCustomer ? `ผูก CRM: ${bookingCustomer.name} (มีแต้มสะสม ${bookingCustomer.total_points || 0} pts)` : 'ผูก CRM จากคิวเดิม',
                 'success'
             );
             updateCustomerPackageHint(Number(bookingContext.customerId));
@@ -1226,7 +1228,7 @@
                 if (customerIdHiddenEl) {
                     customerIdHiddenEl.value = String(customer.id);
                 }
-                updateCustomerMatchHint(`ผูก CRM: ${customer.name || ''}`, 'success');
+                updateCustomerMatchHint(`ผูก CRM: ${customer.name || ''} (มีแต้มสะสม ${customer.total_points || 0} pts)`, 'success');
                 updateCustomerPackageHint(Number(customer.id));
             }
 

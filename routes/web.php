@@ -59,6 +59,7 @@ Route::middleware(['auth', 'shop.access'])->group(function (): void {
         Route::delete('/customers/{customerId}', 'CustomerController@destroy')->name('customers.destroy');
         Route::post('/customers/{customerId}/topup', 'CustomerController@topup')->name('customers.topup');
         Route::get('/crm', 'CrmController@index')->name('crm.index');
+        Route::post('/crm/point-settings', 'CrmController@updatePointSettings')->name('crm.point-settings.update');
         Route::get('/membership-levels', 'MembershipLevelController@index')->name('membership-levels');
         Route::post('/membership-levels', 'MembershipLevelController@store')->name('membership-levels.store');
         Route::put('/membership-levels/{tierId}', 'MembershipLevelController@update')->name('membership-levels.update');

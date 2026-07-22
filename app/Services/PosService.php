@@ -50,6 +50,7 @@ class PosService
             'customers' => $this->getCustomers($branchId),
             'customerPackageBalances' => $this->packageService->getCustomerPackageBalancesMap($branchId),
             'bookingContext' => $this->resolveBookingContext($user, $query, $branchId),
+            'pointSettings' => $this->pointService->getSettings($branchId),
         ];
     }
 
@@ -89,7 +90,8 @@ class PosService
             $sellerId,
             $paymentMethod,
             $usePackage,
-            $bookingContext
+            $bookingContext,
+            $payload
         ): array {
             $normalized = $this->normalizeCartItems($branchId, $items, $staffId, $customerId, $usePackage);
             $normalizedItems = $normalized['items'];
@@ -97,7 +99,7 @@ class PosService
             $tip = max(0.0, $tipAmount);
             
             $pointsToRedeem = isset($payload['points_redeem']) ? (int)$payload['points_redeem'] : 0;
-            $pointsDiscount = $pointsToRedeem > 0 ? $this->pointService->calculateDiscount($pointsToRedeem) : 0.0;
+            $pointsDiscount = $pointsToRedeem > 0 ? $this->pointService->calculateDiscount($pointsToRedeem, $branchId) : 0.0;
             
             $subtotal = array_reduce($normalizedItems, static function (float $carry, array $item): float {
                 return $carry + (float) $item['line_total'];
@@ -116,7 +118,7 @@ class PosService
             if ($customerId && $grandTotal > 0 && in_array($finalPaymentMethod, ['cash', 'transfer', 'credit_card', 'wallet'])) {
                 // Deduct tip from points calculation if needed? Usually tips don't earn points.
                 $earnableAmount = max(0.0, $grandTotal - $tip);
-                $pointsEarned = $this->pointService->calculatePointsEarned($earnableAmount);
+                $pointsEarned = $this->pointService->calculatePointsEarned($earnableAmount, $branchId);
             }
 
             // Charge wallet if needed

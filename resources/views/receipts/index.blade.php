@@ -213,6 +213,14 @@
                         <span>ยอดสุทธิ</span>
                         <span>${formatBaht(receipt.grand_total)}</span>
                     </div>
+                    ${(receipt.points_earned > 0 || receipt.points_redeemed > 0 || receipt.customer_total_points > 0) ? `
+                    <div class="border-top pt-2 mt-2 bg-light rounded-3 p-2 text-start">
+                        <div class="fw-bold small text-primary mb-1"><i class="bi bi-star-fill text-warning me-1"></i>ข้อมูลคะแนนสะสม (Reward Points)</div>
+                        ${receipt.points_earned > 0 ? `<div class="d-flex justify-content-between small"><span>แต้มที่ได้รับจากบิลนี้:</span> <span class="fw-bold text-success">+${receipt.points_earned} แต้ม</span></div>` : ''}
+                        ${receipt.points_redeemed > 0 ? `<div class="d-flex justify-content-between small"><span>แต้มที่ใช้เป็นส่วนลด:</span> <span class="fw-bold text-danger">-${receipt.points_redeemed} แต้ม</span></div>` : ''}
+                        <div class="d-flex justify-content-between small"><span>แต้มสะสมคงเหลือรวม:</span> <span class="fw-bold text-dark">${receipt.customer_total_points} แต้ม</span></div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
         `;

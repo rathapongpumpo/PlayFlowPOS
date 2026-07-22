@@ -116,9 +116,12 @@ class ReceiptService
                 'o.total_amount',
                 'o.discount_amount',
                 'o.grand_total',
+                'o.points_earned',
+                'o.points_redeemed',
                 'o.customer_id',
                 'c.name as customer_name',
                 'c.phone as customer_phone',
+                'c.total_points as customer_total_points',
             ]);
 
         if ($order === null) {
@@ -180,6 +183,9 @@ class ReceiptService
             'total_amount' => (float) $order->total_amount,
             'discount_amount' => (float) $order->discount_amount,
             'grand_total' => (float) $order->grand_total,
+            'points_earned' => (int) ($order->points_earned ?? 0),
+            'points_redeemed' => (int) ($order->points_redeemed ?? 0),
+            'customer_total_points' => (int) ($order->customer_total_points ?? 0),
             'items' => $items,
         ];
     }
