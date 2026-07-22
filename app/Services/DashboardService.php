@@ -426,12 +426,14 @@ class DashboardService
             }
         }
 
-        $masseuseData = DB::table('staff_shifts')
-            ->where('branch_id', $branchId)
-            ->where('shift_date', '>=', $from->toDateString())
-            ->where('shift_date', '<', $to->toDateString())
-            ->selectRaw('masseuse_id as id, SUM(guarantee_amount) as base_salary')
-            ->groupBy('masseuse_id')
+        $masseuseData = DB::table('staff_attendance')
+            ->join('masseuses', 'staff_attendance.masseuse_id', '=', 'masseuses.id')
+            ->where('masseuses.branch_id', $branchId)
+            ->where('staff_attendance.is_working', 1)
+            ->where('staff_attendance.attendance_date', '>=', $from->toDateString())
+            ->where('staff_attendance.attendance_date', '<', $to->toDateString())
+            ->selectRaw('staff_attendance.masseuse_id as id, SUM(masseuses.guarantee_amount) as base_salary')
+            ->groupBy('staff_attendance.masseuse_id')
             ->get()
             ->keyBy('id');
 

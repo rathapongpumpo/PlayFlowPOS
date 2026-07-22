@@ -138,6 +138,15 @@
                     <div class="min-w-0">
                         <div class="staff-name">{{ $s['name'] }}</div>
                         <div class="staff-id">{{ $s['display_id'] }}</div>
+                        @if(!empty($s['shift_start']) && !empty($s['shift_end']))
+                        <div class="staff-shift-time text-muted small mt-1">
+                            <i class="fa-regular fa-clock me-1"></i> {{ $s['shift_start'] }} - {{ $s['shift_end'] }} น.
+                        </div>
+                        @else
+                        <div class="staff-shift-time text-muted small mt-1">
+                            <i class="fa-regular fa-clock me-1"></i> ยังไม่ตั้งเวลาเข้างาน
+                        </div>
+                        @endif
                     </div>
                 </div>
 

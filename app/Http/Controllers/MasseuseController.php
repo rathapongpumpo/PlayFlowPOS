@@ -64,34 +64,8 @@ class MasseuseController extends Controller
         abort_if(!($pageData['moduleReady'] ?? false), 404);
         abort_if(!is_array($formRecord), 404);
 
-        $month = $request->query('month', now()->format('m'));
-        $year = $request->query('year', now()->format('Y'));
-        $activeBranchId = $pageData['activeBranchId'] ?? 0;
-
-        $shifts = \Illuminate\Support\Facades\DB::table('staff_shifts')
-            ->where('masseuse_id', $staffId)
-            ->where('branch_id', $activeBranchId)
-            ->whereMonth('shift_date', $month)
-            ->whereYear('shift_date', $year)
-            ->orderBy('shift_date', 'asc')
-            ->get();
-
-        foreach ($shifts as $shift) {
-            $shift->earned_commission = \Illuminate\Support\Facades\DB::table('commissions')
-                ->where('masseuse_id', $staffId)
-                ->where('branch_id', $activeBranchId)
-                ->whereDate('calculated_at', $shift->shift_date)
-                ->sum('amount');
-                
-            $guarantee = (float)($shift->guarantee_amount ?? 0);
-            $shift->guarantee_topup = max(0, $guarantee - $shift->earned_commission);
-        }
-
         return view('masseuse.edit', array_merge($pageData, [
             'formRecord' => $formRecord,
-            'shifts' => $shifts,
-            'month' => $month,
-            'year' => $year,
         ]));
     }
 
@@ -127,6 +101,9 @@ class MasseuseController extends Controller
             'skills_description' => 'nullable|string|max:5000',
             'status' => 'required|in:available,busy,on_break,off_duty,day_off',
             'profile_image' => 'nullable|image|max:2048',
+            'shift_start' => 'nullable|date_format:H:i',
+            'shift_end' => 'nullable|date_format:H:i',
+            'guarantee_amount' => 'nullable|numeric|min:0',
         ]);
 
         $requestedBranchId = isset($payload['branch_id']) ? (int) $payload['branch_id'] : null;
@@ -153,6 +130,9 @@ class MasseuseController extends Controller
             'status' => 'required|in:available,busy,on_break,off_duty,day_off',
             'profile_image' => 'nullable|image|max:2048',
             'remove_profile_image' => 'nullable|boolean',
+            'shift_start' => 'nullable|date_format:H:i',
+            'shift_end' => 'nullable|date_format:H:i',
+            'guarantee_amount' => 'nullable|numeric|min:0',
         ]);
 
         $requestedBranchId = isset($payload['branch_id']) ? (int) $payload['branch_id'] : null;

@@ -43,15 +43,29 @@ class MasseuseService
         );
         $staffWithYesterday = $this->appendYesterdaySummary($staffWithMonthlySummary, $activeBranchId, $date);
 
+        $staffRecords = $this->tableExists('masseuses')
+            ? $this->getStaffRecords($activeBranchId, $staffWithYesterday)
+            : [];
+
+        // Inject shift times back into staff array for index view
+        foreach ($staffWithYesterday as &$s) {
+            foreach ($staffRecords as $record) {
+                if (($record['id'] ?? 0) === (int) ($s['id'] ?? 0)) {
+                    $s['shift_start'] = $record['shift_start'] ?? null;
+                    $s['shift_end'] = $record['shift_end'] ?? null;
+                    break;
+                }
+            }
+        }
+        unset($s);
+
         return array_merge($pageData, [
             'staff' => $staffWithYesterday,
             'moduleReady' => $this->tableExists('masseuses'),
             'canManage' => $this->canManage($user),
             'canManageAttendance' => $this->canManageAttendance($user),
             'statusOptions' => $this->getStatusOptions(),
-            'staffRecords' => $this->tableExists('masseuses')
-                ? $this->getStaffRecords($activeBranchId, $staffWithYesterday)
-                : [],
+            'staffRecords' => $staffRecords,
         ]);
     }
 
@@ -118,6 +132,9 @@ class MasseuseService
             'full_name' => $this->normalizeNullableString($payload['full_name'] ?? null),
             'skills_description' => $this->normalizeNullableString($payload['skills_description'] ?? null),
             'status' => $this->normalizeStatus($payload['status'] ?? null),
+            'shift_start' => $payload['shift_start'] ?? null,
+            'shift_end' => $payload['shift_end'] ?? null,
+            'guarantee_amount' => isset($payload['guarantee_amount']) ? (float) $payload['guarantee_amount'] : 0.0,
         ];
 
         if ($profileImage !== null) {
@@ -166,6 +183,9 @@ class MasseuseService
             'full_name' => $this->normalizeNullableString($payload['full_name'] ?? null),
             'skills_description' => $this->normalizeNullableString($payload['skills_description'] ?? null),
             'status' => $this->normalizeStatus($payload['status'] ?? null),
+            'shift_start' => $payload['shift_start'] ?? null,
+            'shift_end' => $payload['shift_end'] ?? null,
+            'guarantee_amount' => isset($payload['guarantee_amount']) ? (float) $payload['guarantee_amount'] : 0.0,
         ];
 
         $removeProfileImage = !empty($payload['remove_profile_image']);
@@ -277,6 +297,9 @@ class MasseuseService
                 'skills_description',
                 'status',
                 'base_salary',
+                'shift_start',
+                'shift_end',
+                'guarantee_amount',
             ])
             ->map(function ($row) use ($statsById): array {
                 $staffId = (string) $row->id;
@@ -292,8 +315,11 @@ class MasseuseService
                     'profile_image' => $row->profile_image !== null ? (string) $row->profile_image : '',
                     'avatar' => $this->resolveAvatar(
                         $row->profile_image !== null ? (string) $row->profile_image : '',
-                        $staffId
+                        (string) ($row->nickname ?? '')
                     ),
+                    'shift_start' => $row->shift_start !== null ? \Carbon\Carbon::parse($row->shift_start)->format('H:i') : null,
+                    'shift_end' => $row->shift_end !== null ? \Carbon\Carbon::parse($row->shift_end)->format('H:i') : null,
+                    'guarantee_amount' => (float) ($row->guarantee_amount ?? 0),
                     'skills_description' => $row->skills_description !== null ? (string) $row->skills_description : '',
                     'status_value' => $row->status !== null ? (string) $row->status : 'off_duty',
                     'status_label' => $this->formatStatusLabel($row->status !== null ? (string) $row->status : 'off_duty'),

@@ -14,6 +14,8 @@
         : trim((string) old('nickname', $formRecord['nickname'] ?? ''));
     $hasExistingImage = !$isEdit ? false : (($formRecord['profile_image'] ?? '') !== '');
     $imageSource = $hasExistingImage ? (string) ($formRecord['avatar'] ?? '') : '';
+    $defaultShiftStart = !empty($formRecord['shift_start']) ? \Carbon\Carbon::parse($formRecord['shift_start'])->format('H:i') : '';
+    $defaultShiftEnd = !empty($formRecord['shift_end']) ? \Carbon\Carbon::parse($formRecord['shift_end'])->format('H:i') : '';
 @endphp
 
 <div class="row g-3">
@@ -109,6 +111,18 @@
                                 </option>
                                 @endforeach
                             </select>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label small fw-bold">ยอดการันตี/วัน (บาท)</label>
+                            <input type="number" step="0.01" min="0" name="guarantee_amount" class="form-control" value="{{ old('guarantee_amount', $formRecord['guarantee_amount'] ?? '0.00') }}">
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label small fw-bold">เวลาเข้างาน</label>
+                            <input type="time" name="shift_start" class="form-control" value="{{ old('shift_start', $defaultShiftStart) }}">
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label small fw-bold">เวลาออกงาน</label>
+                            <input type="time" name="shift_end" class="form-control" value="{{ old('shift_end', $defaultShiftEnd) }}">
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-bold">ทักษะ / รายละเอียดเพิ่มเติม</label>
