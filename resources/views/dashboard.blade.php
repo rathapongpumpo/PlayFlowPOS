@@ -282,7 +282,7 @@
         position: relative;
         z-index: 1;
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 0.9rem;
     }
 
@@ -877,6 +877,16 @@
                         <div class="report-metric-value">{{ number_format($monthlySales) }} บ.</div>
                         <div class="report-metric-note">ยอดสะสมตั้งแต่ต้นเดือนจากบิลที่ชำระแล้ว</div>
                     </article>
+
+                    {{-- ลำดับที่ 3: ค่ามือเดือนนี้ --}}
+                    <article class="report-metric" style="background: linear-gradient(145deg, rgba(255, 140, 150, 0.85), rgba(240, 90, 110, 0.78));">
+                        <div class="report-metric-top">
+                            <div class="report-metric-label" style="color: #5c0919;">ค่ามือ (เดือนนี้)</div>
+                            <span class="report-metric-icon" style="background: #c9184a; color: #ffffff;"><i class="fa-solid fa-hand-holding-dollar"></i></span>
+                        </div>
+                        <div class="report-metric-value" style="color: #3d030e;">{{ number_format($monthlyMasseuseFee) }} บ.</div>
+                        <div class="report-metric-note" style="color: #721124;">สะสมตั้งแต่ต้นเดือนจากค่าคอมหมอนวด</div>
+                    </article>
                     
                     <article class="report-metric" style="background: linear-gradient(145deg, rgba(255, 230, 100, 0.78), rgba(255, 170, 0, 0.72));">
                         <div class="report-metric-top">
@@ -998,8 +1008,8 @@
             <section class="service-card">
                 <div class="section-head">
                     <div>
-                        <h2 class="section-title">ภาพรวมค่ามือและยอดขาย</h2>
-                        <div class="section-note">ดูสมดุลระหว่างยอดที่เข้าร้านกับต้นทุนค่ามือหมอนวด</div>
+                        <h2 class="section-title">ภาพรวมยอดขายและกำไร</h2>
+                        <div class="section-note">ดูสรุปยอดที่เข้าร้านและกำไรสุทธิประจำเดือน</div>
                     </div>
                 </div>
 
@@ -1008,7 +1018,7 @@
                     <div class="col-12" style="margin-top:0.6rem;">
                         <div class="service-name mt-4" style="font-size:0.85rem; color:var(--dash-muted); margin-bottom:0.25rem;"><i class="fa-solid fa-calendar-days" style="margin-right:0.35rem;"></i>สรุปเดือนนี้</div>
                     </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-6">
                         <div class="service-item h-100">
                             <div class="service-row mb-2">
                                 <div>
@@ -1020,19 +1030,7 @@
                             <div class="spotlight-value mb-0" style="font-size: clamp(1.5rem, 1.15rem + 1vw, 2.3rem);">{{ number_format($monthlySales) }} ฿</div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
-                        <div class="service-item h-100">
-                            <div class="service-row mb-2">
-                                <div>
-                                    <div class="service-name">ค่ามือเดือนนี้</div>
-                                    <div class="service-meta">สะสมตั้งแต่ต้นเดือน</div>
-                                </div>
-                                <span class="soft-tag"><i class="fa-solid fa-sack-dollar"></i> เดือนนี้</span>
-                            </div>
-                            <div class="spotlight-value mb-0" style="font-size: clamp(1.5rem, 1.15rem + 1vw, 2.3rem);">{{ number_format($monthlyMasseuseFee) }} ฿</div>
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-4">
+                    <div class="col-12 col-md-6">
                         <div class="service-item h-100" style="border-color: {{ $netProfit >= 0 ? 'rgba(20,184,154,0.25)' : 'rgba(220,83,102,0.25)' }};">
                             <div class="service-row mb-2">
                                 <div>
