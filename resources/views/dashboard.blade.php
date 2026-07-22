@@ -237,11 +237,12 @@
     }
 
     .dashboard-page .mini-stat-value {
-        font-size: clamp(2rem, 1.55rem + 1.8vw, 3rem);
+        font-size: clamp(1.4rem, 1.1rem + 1.4vw, 2.5rem);
         line-height: 1.02;
         font-weight: 700;
         color: var(--dash-navy);
         margin-bottom: 0.45rem;
+        word-break: break-word;
     }
 
     .dashboard-page .mini-stat-meta {
@@ -337,8 +338,9 @@
         font-weight: 700;
         line-height: 1.02;
         color: #123b63;
-        font-size: clamp(1.8rem, 1.3rem + 1.5vw, 2.8rem);
+        font-size: clamp(1.2rem, 0.9rem + 1.2vw, 2.2rem);
         margin-bottom: 0.25rem;
+        word-break: break-word;
     }
 
     .dashboard-page .report-metric-note {
@@ -686,6 +688,10 @@
             padding: 1rem 0.9rem;
         }
 
+        .dashboard-page .mini-stat-value {
+            font-size: clamp(1.2rem, 0.95rem + 1.2vw, 1.8rem);
+        }
+
         .dashboard-page .mini-stat-icon {
             width: 2.35rem;
             height: 2.35rem;
@@ -731,7 +737,7 @@
 @endpush
 
 @section('content')
-<div class="dashboard-page">
+<div class="dashboard-page" id="dashboard-content">
     <div class="row g-3 g-xl-4">
         <div class="col-12">
             <section class="dash-card focus-shell">
@@ -741,7 +747,7 @@
                             <div class="mini-stat-label">ลูกค้าวันนี้</div>
                             <span class="mini-stat-icon is-clients"><i class="fa-solid fa-users"></i></span>
                         </div>
-                        <div class="mini-stat-value">{{ number_format($todayClients) }} คน</div>
+                        <div class="mini-stat-value">{{ number_format($todayClients) }}&nbsp;คน</div>
                         @php
                             $trendClass = 'is-flat';
                             $trendIcon = 'fa-solid fa-minus';
@@ -775,7 +781,7 @@
                             <div class="mini-stat-label">ลูกค้าใหม่วันนี้</div>
                             <span class="mini-stat-icon" style="background: rgba(46, 204, 113, 0.15); color: #27ae60;"><i class="fa-solid fa-user-plus"></i></span>
                         </div>
-                        <div class="mini-stat-value">{{ number_format($stats['new_customers_today'] ?? 0) }} คน</div>
+                        <div class="mini-stat-value">{{ number_format($stats['new_customers_today'] ?? 0) }}&nbsp;คน</div>
                         <div class="mini-stat-meta">
                             <span class="trend-pill is-up"><i class="fa-solid fa-star"></i> ลูกค้าใหม่ที่มาใช้บริการ</span>
                         </div>
@@ -786,7 +792,7 @@
                             <div class="mini-stat-label">ลูกค้าเก่าวันนี้</div>
                             <span class="mini-stat-icon" style="background: rgba(52, 152, 219, 0.15); color: #2980b9;"><i class="fa-solid fa-user-clock"></i></span>
                         </div>
-                        <div class="mini-stat-value">{{ number_format($stats['old_customers_today'] ?? 0) }} คน</div>
+                        <div class="mini-stat-value">{{ number_format($stats['old_customers_today'] ?? 0) }}&nbsp;คน</div>
                         <div class="mini-stat-meta">
                             <span class="trend-pill is-flat"><i class="fa-solid fa-rotate-right"></i> ลูกค้าเก่ากลับมาใช้บริการ</span>
                         </div>
@@ -797,7 +803,7 @@
                             <div class="mini-stat-label">รวมนวด+แพคเกจ</div>
                             <span class="mini-stat-icon" style="background: rgba(31, 115, 224, 0.15); color: #1b5fae;"><i class="fa-solid fa-layer-group"></i></span>
                         </div>
-                        <div class="mini-stat-value">{{ number_format($stats['today_total_combined_sales'] ?? 0) }} ฿</div>
+                        <div class="mini-stat-value">{{ number_format($stats['today_total_combined_sales'] ?? 0) }}&nbsp;฿</div>
                         <div class="mini-stat-meta">
                             <span>ยอดใช้งานรวมทั้งหมดวันนี้</span>
                         </div>
@@ -808,7 +814,7 @@
                             <div class="mini-stat-label">ยอดใช้บริการวันนี้</div>
                             <span class="mini-stat-icon" style="background: rgba(20, 184, 154, 0.15); color: #14b89a;"><i class="fa-solid fa-spa"></i></span>
                         </div>
-                        <div class="mini-stat-value">{{ number_format($todayServiceSales) }} ฿</div>
+                        <div class="mini-stat-value">{{ number_format($todayServiceSales) }}&nbsp;฿</div>
                         <div class="mini-stat-meta">
                             <span>ยอดขายบริการ (service) วันนี้</span>
                         </div>
@@ -819,7 +825,7 @@
                             <div class="mini-stat-label">ยอดขายแพคเกจวันนี้</div>
                             <span class="mini-stat-icon" style="background: rgba(236, 179, 44, 0.15); color: #ecb32c;"><i class="fa-solid fa-box-open"></i></span>
                         </div>
-                        <div class="mini-stat-value">{{ number_format($todayPackageSales) }} ฿</div>
+                        <div class="mini-stat-value">{{ number_format($todayPackageSales) }}&nbsp;฿</div>
                         <div class="mini-stat-meta">
                             <span>ยอดขายแพคเกจวันนี้</span>
                         </div>
@@ -830,7 +836,7 @@
                             <div class="mini-stat-label">ค่ามือวันนี้</div>
                             <span class="mini-stat-icon" style="background: rgba(220, 53, 69, 0.15); color: #dc3545;"><i class="fa-solid fa-hand-holding-dollar"></i></span>
                         </div>
-                        <div class="mini-stat-value">{{ number_format($dailyMasseuseFee) }} ฿</div>
+                        <div class="mini-stat-value">{{ number_format($dailyMasseuseFee) }}&nbsp;฿</div>
                         <div class="mini-stat-meta">
                             <span>คอมมิชชั่นที่จ่ายให้หมอนวด</span>
                         </div>
@@ -864,7 +870,7 @@
                             <div class="report-metric-label">{{ $selectedRangeLabel }}</div>
                             <span class="report-metric-icon"><i class="fa-solid fa-bolt"></i></span>
                         </div>
-                        <div class="report-metric-value">{{ number_format((int) ($stats['selected_range_sales'] ?? 0)) }} บ.</div>
+                        <div class="report-metric-value">{{ number_format((int) ($stats['selected_range_sales'] ?? 0)) }}&nbsp;บ.</div>
                         <div class="report-metric-note">ยอดขายของช่วงเวลาที่เลือกจากสาขาปัจจุบัน</div>
                     </article>
 
@@ -874,27 +880,37 @@
                             <div class="report-metric-label">รายเดือน</div>
                             <span class="report-metric-icon"><i class="fa-solid fa-calendar"></i></span>
                         </div>
-                        <div class="report-metric-value">{{ number_format($monthlySales) }} บ.</div>
+                        <div class="report-metric-value">{{ number_format($monthlySales) }}&nbsp;บ.</div>
                         <div class="report-metric-note">ยอดสะสมตั้งแต่ต้นเดือนจากบิลที่ชำระแล้ว</div>
                     </article>
 
-                    {{-- ลำดับที่ 3: ค่ามือเดือนนี้ --}}
+                    {{-- ลำดับที่ 3: ค่ามือ --}}
                     <article class="report-metric" style="background: linear-gradient(145deg, rgba(255, 140, 150, 0.85), rgba(240, 90, 110, 0.78));">
                         <div class="report-metric-top">
-                            <div class="report-metric-label" style="color: #5c0919;">ค่ามือ (เดือนนี้)</div>
+                            <div class="report-metric-label" style="color: #5c0919;">ค่ามือ ({{ $selectedRangeLabel }})</div>
                             <span class="report-metric-icon" style="background: #c9184a; color: #ffffff;"><i class="fa-solid fa-hand-holding-dollar"></i></span>
                         </div>
-                        <div class="report-metric-value" style="color: #3d030e;">{{ number_format($monthlyMasseuseFee) }} บ.</div>
-                        <div class="report-metric-note" style="color: #721124;">สะสมตั้งแต่ต้นเดือนจากค่าคอมหมอนวด</div>
+                        <div class="report-metric-value" style="color: #3d030e;">{{ number_format($stats['range_commission_only'] ?? 0) }}&nbsp;บ.</div>
+                        <div class="report-metric-note" style="color: #721124;">ยอดรวมค่าคอมหมอนวดของช่วงเวลาที่เลือก</div>
+                    </article>
+
+                    {{-- เพิ่มใหม่: ส่วนต่างการันตี --}}
+                    <article class="report-metric" style="background: linear-gradient(145deg, rgba(255, 180, 120, 0.85), rgba(240, 120, 60, 0.78));">
+                        <div class="report-metric-top">
+                            <div class="report-metric-label" style="color: #632d0b;">ยอด Top-up ({{ $selectedRangeLabel }})</div>
+                            <span class="report-metric-icon" style="background: #d85c15; color: #ffffff;"><i class="fa-solid fa-coins"></i></span>
+                        </div>
+                        <div class="report-metric-value" style="color: #4a1f05;">{{ number_format($stats['range_top_up_only'] ?? 0) }}&nbsp;บ.</div>
+                        <div class="report-metric-note" style="color: #7a360a;">ยอดชดเชยการันตีของช่วงเวลาที่เลือก</div>
                     </article>
                     
                     <article class="report-metric" style="background: linear-gradient(145deg, rgba(255, 230, 100, 0.78), rgba(255, 170, 0, 0.72));">
                         <div class="report-metric-top">
-                            <div class="report-metric-label" style="color: #6d4c00;">กำไรสุทธิ (เดือนนี้)</div>
+                            <div class="report-metric-label" style="color: #6d4c00;">กำไรสุทธิ ({{ $selectedRangeLabel }})</div>
                             <span class="report-metric-icon" style="background: #e69d00;"><i class="fa-solid fa-piggy-bank"></i></span>
                         </div>
-                        <div class="report-metric-value" style="color: #4a3400;">{{ number_format($stats['net_profit'] ?? 0) }} บ.</div>
-                        <div class="report-metric-note" style="color: #8c6200;">หักค่ามือจากยอดขายรายเดือนแล้ว</div>
+                        <div class="report-metric-value" style="color: #4a3400;">{{ number_format($stats['net_profit'] ?? 0) }}&nbsp;บ.</div>
+                        <div class="report-metric-note" style="color: #8c6200;">รายได้หักค่ามือช่วงที่เลือก (ไม่หักส่วนต่าง)</div>
                     </article>
 
                     <article class="report-metric" style="background: linear-gradient(145deg, rgba(160, 100, 255, 0.78), rgba(100, 50, 200, 0.72));">
@@ -934,7 +950,9 @@
                 </div>
 
                 <div class="chart-stage">
-                    <canvas id="salesChart"></canvas>
+                    <canvas id="salesChart" 
+                            data-labels="{{ json_encode($salesChart['labels'] ?? []) }}" 
+                            data-values="{{ json_encode($salesChart['data'] ?? []) }}"></canvas>
                 </div>
             </section>
         </div>
@@ -1107,23 +1125,37 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    (function () {
+    window.salesChartInstance = null;
+
+    function initDashboardChart() {
         const canvas = document.getElementById('salesChart');
         if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        const salesChartLabels = @json($salesChart['labels'] ?? []);
-        const salesChartData = @json($salesChart['data'] ?? []);
-        const labels = salesChartLabels.length ? salesChartLabels : ['-', '-', '-', '-', '-', '-', '-'];
-        const data = salesChartData.length ? salesChartData : [0, 0, 0, 0, 0, 0, 0];
+        let labels = [];
+        let data = [];
+        try {
+            labels = JSON.parse(canvas.getAttribute('data-labels') || '[]');
+            data = JSON.parse(canvas.getAttribute('data-values') || '[]');
+        } catch (e) {
+            console.error('Error parsing chart data', e);
+        }
+
+        if (labels.length === 0) labels = ['-', '-', '-', '-', '-', '-', '-'];
+        if (data.length === 0) data = [0, 0, 0, 0, 0, 0, 0];
+
         const gradient = ctx.createLinearGradient(0, 0, 0, 320);
         gradient.addColorStop(0, 'rgba(31, 115, 224, 0.30)');
         gradient.addColorStop(0.65, 'rgba(31, 115, 224, 0.10)');
         gradient.addColorStop(1, 'rgba(20, 184, 154, 0.04)');
 
-        new Chart(ctx, {
+        if (window.salesChartInstance) {
+            window.salesChartInstance.destroy();
+        }
+
+        window.salesChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
@@ -1202,6 +1234,59 @@
                 }
             }
         });
-    })();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        initDashboardChart();
+
+        document.body.addEventListener('click', async function(e) {
+            const btn = e.target.closest('.range-btn');
+            if (btn) {
+                e.preventDefault();
+                
+                const container = document.getElementById('dashboard-content');
+                if (!container) return;
+
+                container.style.opacity = '0.5';
+                container.style.pointerEvents = 'none';
+                
+                // Add loading spinner class or similar visual cue here if desired
+
+                try {
+                    const url = btn.href;
+                    const response = await fetch(url, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (response.ok) {
+                        const html = await response.text();
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newContainer = doc.getElementById('dashboard-content');
+                        
+                        if (newContainer) {
+                            container.innerHTML = newContainer.innerHTML;
+                            window.history.pushState({}, '', url);
+                            initDashboardChart();
+                            
+                            // Re-bind datepickers or other scripts if they exist within the updated content
+                        } else {
+                            window.location.href = url;
+                        }
+                    } else {
+                        window.location.href = url;
+                    }
+                } catch (error) {
+                    console.error('Error loading dashboard:', error);
+                    window.location.href = btn.href;
+                } finally {
+                    container.style.opacity = '1';
+                    container.style.pointerEvents = 'auto';
+                }
+            }
+        });
+    });
 </script>
 @endpush

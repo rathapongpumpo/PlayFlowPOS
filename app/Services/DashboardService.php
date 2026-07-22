@@ -38,7 +38,7 @@ class DashboardService
         $yesterdayClients = $this->countDistinctClientsBetween($resolvedBranchId, $yesterday, $today);
         $todayOrders = $this->countOrdersBetween($resolvedBranchId, $today, $tomorrow);
         $clientTrend = $this->buildClientTrend($todayClients, $yesterdayClients);
-        $rangeSales = $this->resolveRangeSales($selectedRange, $todaySales, $yesterdaySales, $lastSevenDaysSales);
+        $rangeSales = $this->resolveRangeSales($selectedRange, $todaySales, $yesterdaySales, $lastSevenDaysSales, $monthlySales);
         $rangeLabel = $this->resolveRangeLabel($selectedRange);
 
         $topServices = $this->buildTopServices($resolvedBranchId, $monthStart);
@@ -57,12 +57,30 @@ class DashboardService
             return $carry + $m['commission'] + $m['top_up'];
         }, 0));
 
-        $monthlyMasseuses = $this->buildMasseuseSummaryRows($resolvedBranchId, $monthStart, $tomorrow);
-        $monthlyMasseuseFee = (int) round(array_reduce($monthlyMasseuses, function($carry, $m) {
-            return $carry + $m['commission'] + $m['top_up'];
+        $rangeStart = $today;
+        $rangeEnd = $tomorrow;
+        if ($selectedRange === 'yesterday') {
+            $rangeStart = $yesterday;
+            $rangeEnd = $today;
+        } elseif ($selectedRange === '7d') {
+            $rangeStart = $lastSevenDaysStart;
+            $rangeEnd = $tomorrow;
+        } elseif ($selectedRange === 'month') {
+            $rangeStart = $monthStart;
+            $rangeEnd = $tomorrow;
+        }
+        
+        $rangeMasseuses = $this->buildMasseuseSummaryRows($resolvedBranchId, $rangeStart, $rangeEnd);
+        
+        $rangeCommissionOnly = (int) round(array_reduce($rangeMasseuses, function($carry, $m) {
+            return $carry + $m['commission'];
         }, 0));
         
-        $netProfit = (int) round($monthlySales) - $monthlyMasseuseFee;
+        $rangeTopUpOnly = (int) round(array_reduce($rangeMasseuses, function($carry, $m) {
+            return $carry + $m['top_up'];
+        }, 0));
+        
+        $netProfit = (int) round($rangeSales) - $rangeCommissionOnly;
 
         // New vs Old Customers for today
         $todayActiveCustomers = DB::table('orders')
@@ -98,7 +116,8 @@ class DashboardService
             'selected_range_sales' => (int) round($rangeSales),
             'monthly_sales' => (int) round($monthlySales),
             'daily_masseuse_fee' => $dailyMasseuseFee,
-            'monthly_masseuse_fee' => $monthlyMasseuseFee,
+            'range_commission_only' => $rangeCommissionOnly,
+            'range_top_up_only' => $rangeTopUpOnly,
             'today_service_sales' => $todayServiceSales,
             'today_package_sales' => $todayPackageSales,
             'today_total_combined_sales' => $todayTotalCombinedSales,
@@ -144,7 +163,7 @@ class DashboardService
 
     private function normalizeRange(string $range): string
     {
-        if (in_array($range, ['today', 'yesterday', '7d'], true)) {
+        if (in_array($range, ['today', 'yesterday', '7d', 'month'], true)) {
             return $range;
         }
 
@@ -161,10 +180,14 @@ class DashboardService
             return '7 วันย้อนหลัง';
         }
 
+        if ($range === 'month') {
+            return 'เดือนนี้';
+        }
+
         return 'วันนี้';
     }
 
-    private function resolveRangeSales(string $range, float $todaySales, float $yesterdaySales, float $lastSevenDaysSales): float
+    private function resolveRangeSales(string $range, float $todaySales, float $yesterdaySales, float $lastSevenDaysSales, float $monthlySales): float
     {
         if ($range === 'yesterday') {
             return $yesterdaySales;
@@ -172,6 +195,10 @@ class DashboardService
 
         if ($range === '7d') {
             return $lastSevenDaysSales;
+        }
+
+        if ($range === 'month') {
+            return $monthlySales;
         }
 
         return $todaySales;
@@ -426,16 +453,46 @@ class DashboardService
             }
         }
 
-        $masseuseData = DB::table('staff_attendance')
+        $dailyAttendances = DB::table('staff_attendance')
             ->join('masseuses', 'staff_attendance.masseuse_id', '=', 'masseuses.id')
             ->where('masseuses.branch_id', $branchId)
             ->where('staff_attendance.is_working', 1)
             ->where('staff_attendance.attendance_date', '>=', $from->toDateString())
             ->where('staff_attendance.attendance_date', '<', $to->toDateString())
-            ->selectRaw('staff_attendance.masseuse_id as id, SUM(masseuses.guarantee_amount) as base_salary')
-            ->groupBy('staff_attendance.masseuse_id')
-            ->get()
-            ->keyBy('id');
+            ->select('staff_attendance.masseuse_id as id', 'staff_attendance.attendance_date as date', 'masseuses.guarantee_amount')
+            ->get();
+
+        $dailyCommissionQuery = DB::table('commissions as c')
+            ->join('order_items as oi', 'oi.id', '=', 'c.order_item_id')
+            ->join('orders as o', 'o.id', '=', 'oi.order_id')
+            ->where('o.branch_id', $branchId)
+            ->where('o.created_at', '>=', $from)
+            ->where('o.created_at', '<', $to)
+            ->selectRaw('COALESCE(c.masseuse_id, 0) as id, DATE(o.created_at) as date, SUM(c.amount) as commission')
+            ->groupBy('c.masseuse_id', DB::raw('DATE(o.created_at)'));
+
+        $dailyCommissionsData = $this->applyPaidScope($dailyCommissionQuery, 'o')->get();
+
+        $topUpsByMasseuse = [];
+        $baseSalariesByMasseuse = [];
+        
+        $dailyCommMap = [];
+        foreach ($dailyCommissionsData as $dc) {
+            $dailyCommMap[$dc->id][$dc->date] = (float) $dc->commission;
+        }
+
+        foreach ($dailyAttendances as $att) {
+            $mId = $att->id;
+            $date = $att->date;
+            $guarantee = (float) $att->guarantee_amount;
+            
+            $baseSalariesByMasseuse[$mId] = ($baseSalariesByMasseuse[$mId] ?? 0.0) + $guarantee;
+            
+            $commAmt = $dailyCommMap[$mId][$date] ?? 0.0;
+            $topUp = max(0.0, $guarantee - $commAmt);
+            
+            $topUpsByMasseuse[$mId] = ($topUpsByMasseuse[$mId] ?? 0.0) + $topUp;
+        }
 
         $masseuseBaseSalaries = DB::table('masseuses')
             ->where('branch_id', $branchId)
@@ -453,12 +510,17 @@ class DashboardService
             $revenue = $revenues->get($id);
             $commission = $commissions->get($id);
             
-            $shiftSalary = (float) ($masseuseData->get($id)->base_salary ?? 0);
+            $shiftSalary = (float) ($baseSalariesByMasseuse[$id] ?? 0);
             $fallbackSalary = (float) ((($masseuseBaseSalaries->get($id) ?? 0) / 30) * $daysInPeriod);
             $baseSalary = $shiftSalary > 0 ? $shiftSalary : $fallbackSalary;
 
             $commissionAmt = (float) ($commission->commission ?? 0);
-            $topUp = max(0.0, $baseSalary - $commissionAmt);
+            
+            if (isset($topUpsByMasseuse[$id]) && $shiftSalary > 0) {
+                $topUp = $topUpsByMasseuse[$id];
+            } else {
+                $topUp = max(0.0, $baseSalary - $commissionAmt);
+            }
 
             $tipAmt = (float) ($tipsByMasseuse[$id] ?? 0);
 
