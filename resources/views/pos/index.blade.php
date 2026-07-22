@@ -125,7 +125,7 @@
                                 <label class="small fw-bold text-muted">ผู้ขาย (แคชเชียร์)</label>
                                 <select id="seller-select" class="form-select form-select-sm rounded-3">
                                     <option value="">-- ไม่ระบุ --</option>
-                                    @foreach($staff as $s)
+                                    @foreach($sellers as $s)
                                     <option value="{{ $s['id'] }}">{{ $s['name'] }}</option>
                                     @endforeach
                                 </select>

@@ -46,6 +46,7 @@ class PosService
             'items' => $this->getPosItems($branchId),
             'serviceItems' => $this->getServiceItems($branchId),
             'staff' => $this->getStaff($user, $branchId),
+            'sellers' => $this->getSellers($user, $branchId),
             'customers' => $this->getCustomers($branchId),
             'customerPackageBalances' => $this->packageService->getCustomerPackageBalancesMap($branchId),
             'bookingContext' => $this->resolveBookingContext($user, $query, $branchId),
@@ -367,6 +368,35 @@ class PosService
             Carbon::today()->toDateString(),
             true
         );
+    }
+
+    private function getSellers(User $user, int $branchId): array
+    {
+        $query = DB::table('staff')
+            ->where('branch_id', $branchId)
+            ->where('is_active', 1)
+            ->orderBy('name');
+
+        if ($this->hasColumn('staff', 'position')) {
+            $query->where(function ($q) {
+                $q->whereNull('position')
+                  ->orWhere('position', '!=', 'หมอนวด');
+            });
+        }
+
+        return $query
+            ->get(['id', 'name', 'nickname'])
+            ->map(function ($row) {
+                $name = trim((string)$row->name);
+                if (!empty($row->nickname)) {
+                    $name .= ' (' . trim((string)$row->nickname) . ')';
+                }
+                return [
+                    'id' => (string) $row->id,
+                    'name' => $name,
+                ];
+            })
+            ->all();
     }
 
     private function getCustomers(int $branchId): array
