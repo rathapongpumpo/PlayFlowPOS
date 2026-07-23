@@ -201,9 +201,17 @@
                                 <span class="summary-label">จำนวนคิว</span>
                                 <div class="summary-value">{{ number_format($dailyQueueCount) }}</div>
                             </div>
-                            <div class="summary-metric is-full">
+                            <div class="summary-metric">
                                 <span class="summary-label">ค่ามือ</span>
                                 <div class="summary-value">{{ number_format($s['commission']) }} ฿</div>
+                            </div>
+                            <div class="summary-metric">
+                                <span class="summary-label" style="color: #64819d; font-size: 0.8rem;">เงินสมทบ (Top-up)</span>
+                                <div class="summary-value" style="color: #ff914d; font-size: 1.1rem; font-weight: bold;">{{ number_format($s['top_up']) }} ฿</div>
+                            </div>
+                            <div class="summary-metric" style="grid-column: 1 / -1; background-color: #f0f7ff; padding: 0.5rem; border-radius: 0.5rem; border-left: 4px solid #2d8ff0; margin-top: 0.25rem;">
+                                <span class="summary-label" style="color: #2d8ff0; font-weight: bold;">รวมรับจริง (ค่ามือ + Top-up)</span>
+                                <div class="summary-value" style="color: #2d8ff0; font-size: 1.2rem;">{{ number_format($s['commission'] + $s['top_up']) }} ฿</div>
                             </div>
                         </div>
                     </div>
@@ -217,9 +225,17 @@
                                 <span class="summary-label">จำนวนคิว</span>
                                 <div class="summary-value">{{ number_format($s['yesterday_queue_count'] ?? 0) }}</div>
                             </div>
-                            <div class="summary-metric is-full">
+                            <div class="summary-metric">
                                 <span class="summary-label">ค่ามือ</span>
                                 <div class="summary-value">{{ number_format($s['yesterday_commission'] ?? 0) }} ฿</div>
+                            </div>
+                            <div class="summary-metric">
+                                <span class="summary-label" style="color: #64819d; font-size: 0.8rem;">เงินสมทบ (Top-up)</span>
+                                <div class="summary-value" style="color: #ff914d; font-size: 1.1rem; font-weight: bold;">{{ number_format($s['yesterday_top_up'] ?? 0) }} ฿</div>
+                            </div>
+                            <div class="summary-metric" style="grid-column: 1 / -1; background-color: #f0f7ff; padding: 0.5rem; border-radius: 0.5rem; border-left: 4px solid #2d8ff0; margin-top: 0.25rem;">
+                                <span class="summary-label" style="color: #2d8ff0; font-weight: bold;">รวมรับจริง (ค่ามือ + Top-up)</span>
+                                <div class="summary-value" style="color: #2d8ff0; font-size: 1.2rem;">{{ number_format(($s['yesterday_commission'] ?? 0) + ($s['yesterday_top_up'] ?? 0)) }} ฿</div>
                             </div>
                         </div>
                     </div>
@@ -236,9 +252,17 @@
                             <span class="summary-label">จำนวนคิว</span>
                             <div class="summary-value">{{ number_format($s['monthly_queue_count'] ?? 0) }}</div>
                         </div>
-                        <div class="summary-metric is-full">
+                        <div class="summary-metric">
                             <span class="summary-label">ค่ามือ</span>
                             <div class="summary-value">{{ number_format($s['monthly_commission'] ?? 0) }} ฿</div>
+                        </div>
+                        <div class="summary-metric">
+                            <span class="summary-label" style="color: #64819d; font-size: 0.8rem;">เงินสมทบ (Top-up)</span>
+                            <div class="summary-value" style="color: #ff914d; font-size: 1.1rem; font-weight: bold;">{{ number_format($s['monthly_top_up'] ?? 0) }} ฿</div>
+                        </div>
+                        <div class="summary-metric" style="grid-column: 1 / -1; background-color: #f0f7ff; padding: 0.5rem; border-radius: 0.5rem; border-left: 4px solid #2d8ff0; margin-top: 0.25rem;">
+                            <span class="summary-label" style="color: #2d8ff0; font-weight: bold;">รวมรับจริง (ค่ามือ + Top-up)</span>
+                            <div class="summary-value" style="color: #2d8ff0; font-size: 1.2rem;">{{ number_format(($s['monthly_commission'] ?? 0) + ($s['monthly_top_up'] ?? 0)) }} ฿</div>
                         </div>
                     </div>
                 </div>

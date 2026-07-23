@@ -47,12 +47,14 @@ class MasseuseService
             ? $this->getStaffRecords($activeBranchId, $staffWithYesterday)
             : [];
 
-        // Inject shift times back into staff array for index view
+        // Inject shift times and today's top_up back into staff array for index view
         foreach ($staffWithYesterday as &$s) {
+            $s['top_up'] = 0.0;
             foreach ($staffRecords as $record) {
                 if (($record['id'] ?? 0) === (int) ($s['id'] ?? 0)) {
                     $s['shift_start'] = $record['shift_start'] ?? null;
                     $s['shift_end'] = $record['shift_end'] ?? null;
+                    $s['top_up'] = $record['top_up'] ?? 0.0;
                     break;
                 }
             }
@@ -305,6 +307,13 @@ class MasseuseService
                 $staffId = (string) $row->id;
                 $stats = $statsById[$staffId] ?? [];
                 $queue = isset($stats['queue']) && is_array($stats['queue']) ? $stats['queue'] : [];
+                $baseSalary = $row->base_salary !== null ? (float) $row->base_salary : 0.0;
+                $guaranteeAmount = $row->guarantee_amount !== null ? (float) $row->guarantee_amount : 0.0;
+                $commission = (float) ($stats['commission'] ?? 0);
+                $isWorkingToday = (bool) ($stats['isWorkingToday'] ?? true);
+                
+                $hasWorked = $isWorkingToday || count($queue) > 0 || $commission > 0;
+                $topUp = ($hasWorked && $guaranteeAmount > 0) ? max(0.0, $guaranteeAmount - $commission) : 0.0;
 
                 return [
                     'id' => (int) $row->id,
@@ -323,9 +332,10 @@ class MasseuseService
                     'skills_description' => $row->skills_description !== null ? (string) $row->skills_description : '',
                     'status_value' => $row->status !== null ? (string) $row->status : 'off_duty',
                     'status_label' => $this->formatStatusLabel($row->status !== null ? (string) $row->status : 'off_duty'),
-                    'base_salary' => $row->base_salary !== null ? (float) $row->base_salary : 0.0,
+                    'base_salary' => $baseSalary,
                     'income' => (float) ($stats['income'] ?? 0),
-                    'commission' => (float) ($stats['commission'] ?? 0),
+                    'commission' => $commission,
+                    'top_up' => $topUp,
                     'queue_count' => count($queue),
                     'queue_load' => (int) ($stats['queueLoad'] ?? 0),
                     'is_working_today' => (bool) ($stats['isWorkingToday'] ?? true),
@@ -338,7 +348,7 @@ class MasseuseService
 
     private function appendMonthlySummary(array $staffStats, int $branchId, string $date): array
     {
-        $monthlySummaryByStaff = $this->getMonthlySummaryByStaff($branchId, $date);
+        $monthlySummaryByStaff = $this->getMonthlySummaryByStaff($branchId, $date, $staffStats);
 
         return array_map(static function (array $staff) use ($monthlySummaryByStaff): array {
             $staffId = (string) ($staff['id'] ?? '');
@@ -347,12 +357,14 @@ class MasseuseService
                 'income' => 0.0,
                 'commission' => 0.0,
                 'queue_count' => 0,
+                'top_up' => 0.0,
             ];
 
             $staff['daily_queue_count'] = count($queue);
             $staff['monthly_income'] = (float) ($monthlySummary['income'] ?? 0.0);
             $staff['monthly_commission'] = (float) ($monthlySummary['commission'] ?? 0.0);
             $staff['monthly_queue_count'] = (int) ($monthlySummary['queue_count'] ?? 0);
+            $staff['monthly_top_up'] = (float) ($monthlySummary['top_up'] ?? 0.0);
 
             return $staff;
         }, $staffStats);
@@ -368,11 +380,13 @@ class MasseuseService
                 'income' => 0.0,
                 'commission' => 0.0,
                 'queue_count' => 0,
+                'top_up' => 0.0,
             ];
 
             $staff['yesterday_income'] = (float) ($yesterdaySummary['income'] ?? 0.0);
             $staff['yesterday_commission'] = (float) ($yesterdaySummary['commission'] ?? 0.0);
             $staff['yesterday_queue_count'] = (int) ($yesterdaySummary['queue_count'] ?? 0);
+            $staff['yesterday_top_up'] = (float) ($yesterdaySummary['top_up'] ?? 0.0);
 
             return $staff;
         }, $staffStats);
@@ -389,8 +403,7 @@ class MasseuseService
         $yesterday = $selectedDate->copy()->subDay()->startOfDay();
         $yesterdayEnd = $yesterday->copy()->addDay();
 
-        // ดึงยอดรวมจากฐานข้อมูลโดยตรง (แม่นยำและเร็วกว่า)
-        return DB::table('commissions as c')
+        $yesterdaySummary = DB::table('commissions as c')
             ->join('order_items as oi', 'oi.id', '=', 'c.order_item_id')
             ->join('orders as o', 'o.id', '=', 'oi.order_id')
             ->where('o.branch_id', $branchId)
@@ -404,18 +417,34 @@ class MasseuseService
             )
             ->groupBy('c.masseuse_id')
             ->get()
-            ->keyBy('masseuse_id')
-            ->map(function ($row) {
-                return [
-                    'income' => (float) $row->total_income,
-                    'commission' => (float) $row->total_commission,
-                    'queue_count' => (int) $row->queue_count,
-                ];
-            })
-            ->toArray();
-    }
+            ->keyBy('masseuse_id');
+            
+        $masseuseIds = $yesterdaySummary->keys()->toArray();
+        $guarantees = [];
+        if (!empty($masseuseIds)) {
+            $guarantees = DB::table('masseuses')
+                ->whereIn('id', $masseuseIds)
+                ->pluck('guarantee_amount', 'id')
+                ->toArray();
+        }
 
-    private function getMonthlySummaryByStaff(int $branchId, string $date): array
+        return $yesterdaySummary->map(function ($row) use ($guarantees) {
+            $masseuseId = (int) $row->masseuse_id;
+            $commission = (float) $row->total_commission;
+            
+            $guarantee = (float) ($guarantees[$masseuseId] ?? 0);
+            $topUp = $guarantee > 0 ? max(0.0, $guarantee - $commission) : 0.0;
+            
+            return [
+                'income' => (float) $row->total_income,
+                'commission' => $commission,
+                'queue_count' => (int) $row->queue_count,
+                'top_up' => $topUp,
+            ];
+        })
+        ->toArray();
+    }
+    private function getMonthlySummaryByStaff(int $branchId, string $date, array $staffStats = []): array
     {
         if (!$this->tableExists('commissions') || !$this->tableExists('orders')) {
             return [];
@@ -425,7 +454,7 @@ class MasseuseService
         $monthStart = $selectedDate->copy()->startOfMonth()->startOfDay();
         $nextMonthStart = $selectedDate->copy()->addMonthNoOverflow()->startOfMonth()->startOfDay();
 
-        return DB::table('commissions as c')
+        $monthlySummary = DB::table('commissions as c')
             ->join('order_items as oi', 'oi.id', '=', 'c.order_item_id')
             ->join('orders as o', 'o.id', '=', 'oi.order_id')
             ->where('o.branch_id', $branchId)
@@ -439,15 +468,79 @@ class MasseuseService
             )
             ->groupBy('c.masseuse_id')
             ->get()
-            ->keyBy('masseuse_id')
-            ->map(function ($row) {
-                return [
-                    'income' => (float) $row->total_income,
-                    'commission' => (float) $row->total_commission,
-                    'queue_count' => (int) $row->queue_count,
-                ];
-            })
-            ->toArray();
+            ->keyBy('masseuse_id');
+            
+        $dailyAttendances = DB::table('staff_attendance')
+            ->join('masseuses', 'staff_attendance.masseuse_id', '=', 'masseuses.id')
+            ->where('masseuses.branch_id', $branchId)
+            ->where('staff_attendance.is_working', 1)
+            ->where('staff_attendance.attendance_date', '>=', $monthStart->toDateString())
+            ->where('staff_attendance.attendance_date', '<', $nextMonthStart->toDateString())
+            ->select('staff_attendance.masseuse_id as id', 'staff_attendance.attendance_date as date', 'masseuses.guarantee_amount')
+            ->get();
+
+        $dailyCommissionQuery = DB::table('commissions as c')
+            ->join('order_items as oi', 'oi.id', '=', 'c.order_item_id')
+            ->join('orders as o', 'o.id', '=', 'oi.order_id')
+            ->where('o.branch_id', $branchId)
+            ->where('o.status', 'paid')
+            ->where('o.created_at', '>=', $monthStart)
+            ->where('o.created_at', '<', $nextMonthStart)
+            ->selectRaw('COALESCE(c.masseuse_id, 0) as id, DATE(o.created_at) as date, SUM(c.amount) as commission')
+            ->groupBy('c.masseuse_id', DB::raw('DATE(o.created_at)'))
+            ->get();
+
+        $dailyCommMap = [];
+        $daysWorkedMap = [];
+        foreach ($dailyCommissionQuery as $dc) {
+            $dailyCommMap[$dc->id][$dc->date] = (float) $dc->commission;
+            $daysWorkedMap[$dc->id][$dc->date] = true;
+        }
+
+        foreach ($dailyAttendances as $att) {
+            $daysWorkedMap[$att->id][$att->date] = true;
+        }
+        
+        foreach ($staffStats as $staff) {
+            if (!empty($staff['isWorkingToday'])) {
+                $daysWorkedMap[$staff['id']][$selectedDate->toDateString()] = true;
+            }
+        }
+        
+        $masseuseIds = array_keys($daysWorkedMap);
+        $guarantees = [];
+        if (!empty($masseuseIds)) {
+            $guarantees = DB::table('masseuses')
+                ->whereIn('id', $masseuseIds)
+                ->pluck('guarantee_amount', 'id')
+                ->toArray();
+        }
+
+        foreach ($daysWorkedMap as $mId => $dates) {
+            $guarantee = (float) ($guarantees[$mId] ?? 0);
+            if ($guarantee <= 0) continue;
+
+            foreach ($dates as $date => $true) {
+                $commAmt = $dailyCommMap[$mId][$date] ?? 0.0;
+                $topUp = max(0.0, $guarantee - $commAmt);
+                $topUpsByMasseuse[$mId] = ($topUpsByMasseuse[$mId] ?? 0.0) + $topUp;
+            }
+        }
+
+        return $monthlySummary->map(function ($row) use ($topUpsByMasseuse) {
+            $masseuseId = (int) $row->masseuse_id;
+            $commission = (float) $row->total_commission;
+            
+            $topUp = (float) ($topUpsByMasseuse[$masseuseId] ?? 0.0);
+
+            return [
+                'income' => (float) $row->total_income,
+                'commission' => $commission,
+                'queue_count' => (int) $row->queue_count,
+                'top_up' => $topUp,
+            ];
+        })
+        ->toArray();
     }
 
     private function loadBookingServicesMap($bookingRows): array
