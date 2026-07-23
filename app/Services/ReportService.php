@@ -203,18 +203,106 @@ class ReportService
             ->get()
             ->keyBy('masseuse_id');
 
+        // Calculate Top-ups for the given date range
+        $dailyCommissionQuery = DB::table('commissions as c')
+            ->join('order_items as oi', 'oi.id', '=', 'c.order_item_id')
+            ->join('orders as o', 'o.id', '=', 'oi.order_id')
+            ->where('o.branch_id', $branchId)
+            ->where('o.status', 'paid')
+            ->where('o.created_at', '>=', $from)
+            ->where('o.created_at', '<', $to)
+            ->selectRaw('COALESCE(c.masseuse_id, 0) as id, DATE(o.created_at) as date, SUM(c.amount) as commission')
+            ->groupBy('c.masseuse_id', DB::raw('DATE(o.created_at)'))
+            ->get();
+
+        $dailyAttendances = DB::table('staff_attendance')
+            ->join('masseuses', 'staff_attendance.masseuse_id', '=', 'masseuses.id')
+            ->where('masseuses.branch_id', $branchId)
+            ->where('staff_attendance.is_working', 1)
+            ->where('staff_attendance.attendance_date', '>=', $from->toDateString())
+            ->where('staff_attendance.attendance_date', '<', $to->toDateString())
+            ->select('staff_attendance.masseuse_id as id', 'staff_attendance.attendance_date as date')
+            ->get();
+
+        $dailyCommMap = [];
+        $daysWorkedMap = [];
+        foreach ($dailyCommissionQuery as $dc) {
+            $dailyCommMap[$dc->id][$dc->date] = (float) $dc->commission;
+            $daysWorkedMap[$dc->id][$dc->date] = true;
+        }
+
+        foreach ($dailyAttendances as $att) {
+            $daysWorkedMap[$att->id][$att->date] = true;
+        }
+
+        // Add today to daysWorkedMap if it's within the range and they are 'available'
+        $todayStr = Carbon::today()->toDateString();
+        if (Carbon::today()->between($from, $to->copy()->subSecond())) {
+            $availableMasseuses = DB::table('masseuses')
+                ->where('branch_id', $branchId)
+                ->whereIn('status', ['available', 'busy', 'on_break'])
+                ->pluck('id');
+            foreach ($availableMasseuses as $mId) {
+                $daysWorkedMap[$mId][$todayStr] = true;
+            }
+        }
+
+        $masseuseIds = array_keys($daysWorkedMap);
+        $guarantees = [];
+        if (!empty($masseuseIds)) {
+            $guarantees = DB::table('masseuses')
+                ->whereIn('id', $masseuseIds)
+                ->pluck('guarantee_amount', 'id')
+                ->toArray();
+        }
+
+        $topUpsByMasseuse = [];
+        foreach ($daysWorkedMap as $mId => $dates) {
+            $guarantee = (float) ($guarantees[$mId] ?? 0);
+            if ($guarantee <= 0) continue;
+
+            foreach ($dates as $date => $true) {
+                $commAmt = $dailyCommMap[$mId][$date] ?? 0.0;
+                $topUp = max(0.0, $guarantee - $commAmt);
+                $topUpsByMasseuse[$mId] = ($topUpsByMasseuse[$mId] ?? 0.0) + $topUp;
+            }
+        }
+
+        // We must also include masseuses who might only have top_ups but no revenue
+        // But the report is currently driven by `$revenues`.
+        // Let's ensure anyone in $topUpsByMasseuse is also in the result.
+        // Actually, if they have top-ups but no revenue, they still need to be paid!
+        $allMasseuseIds = collect($revenues->keys())->merge(array_keys($topUpsByMasseuse))->unique();
+        
+        $masseuseNames = DB::table('masseuses')
+            ->whereIn('id', $allMasseuseIds)
+            ->selectRaw("id, COALESCE(NULLIF(nickname, ''), full_name, CONCAT('Masseuse #', id)) as name")
+            ->pluck('name', 'id')
+            ->toArray();
+
         $result = [];
-        foreach ($revenues as $masseuseId => $rev) {
+        foreach ($allMasseuseIds as $masseuseId) {
+            $rev = $revenues->get($masseuseId);
             $comm = $commissions->get($masseuseId);
+            $topUp = $topUpsByMasseuse[$masseuseId] ?? 0.0;
+            $totalCommission = (int) round((float) ($comm->total_commission ?? 0));
+
             $result[] = [
                 'masseuse_id' => (int) $masseuseId,
-                'name' => (string) $rev->name,
-                'total_revenue' => (int) round((float) $rev->total_revenue),
-                'total_commission' => (int) round((float) ($comm->total_commission ?? 0)),
-                'queue_count' => (int) $rev->queue_count,
-                'total_services' => (int) $rev->total_services,
+                'name' => $masseuseNames[$masseuseId] ?? ('Masseuse #' . $masseuseId),
+                'total_revenue' => (int) round((float) ($rev->total_revenue ?? 0)),
+                'total_commission' => $totalCommission,
+                'queue_count' => (int) ($rev->queue_count ?? 0),
+                'total_services' => (int) ($rev->total_services ?? 0),
+                'top_up' => (int) round($topUp),
+                'total_paid' => $totalCommission + (int) round($topUp),
             ];
         }
+
+        // Sort by total_paid descending
+        usort($result, function($a, $b) {
+            return $b['total_paid'] <=> $a['total_paid'];
+        });
 
         return $result;
     }
@@ -303,8 +391,8 @@ class ReportService
     public function exportMasseuseCsv(int $branchId, ?string $dateFrom, ?string $dateTo): array
     {
         $report = $this->getMasseuseReport($branchId, $dateFrom, $dateTo);
-        $header = ['ชื่อหมอนวด', 'รายได้ (฿)', 'ค่าคอมมิชชัน (฿)', 'จำนวนรอบ', 'จำนวนบริการ'];
-        $rows = array_map(fn($r) => [$r['name'], $r['total_revenue'], $r['total_commission'], $r['queue_count'], $r['total_services']], $report['masseuses']);
+        $header = ['ชื่อหมอนวด', 'รายได้ (฿)', 'ค่าคอมมิชชัน (฿)', 'เงินสมทบ (฿)', 'รวมจ่าย (฿)', 'จำนวนรอบ', 'จำนวนบริการ'];
+        $rows = array_map(fn($r) => [$r['name'], $r['total_revenue'], $r['total_commission'], $r['top_up'], $r['total_paid'], $r['queue_count'], $r['total_services']], $report['masseuses']);
         return ['header' => $header, 'rows' => $rows, 'filename' => 'masseuse_report_' . now()->format('Ymd') . '.csv'];
     }
 

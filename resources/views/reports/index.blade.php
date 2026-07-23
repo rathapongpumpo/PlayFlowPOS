@@ -517,27 +517,36 @@
                 @php
         $totalMasseuseRevenue = collect($masseuseReport['masseuses'])->sum('total_revenue');
         $totalMasseuseCommission = collect($masseuseReport['masseuses'])->sum('total_commission');
+        $totalMasseuseTopUp = collect($masseuseReport['masseuses'])->sum('top_up');
+        $totalMasseusePaid = collect($masseuseReport['masseuses'])->sum('total_paid');
         $totalQueues = collect($masseuseReport['masseuses'])->sum('queue_count');
                 @endphp
-                <div class="col-6 col-md-4">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="icon-chip icon-chip--blue mx-auto mb-2"><i class="fa-solid fa-coins"></i></div>
                         <div class="stat-value">{{ number_format($totalMasseuseRevenue) }}</div>
-                        <div class="stat-label">รายได้รวมจากบริการ (฿)</div>
+                        <div class="stat-label">รายได้รวม (฿)</div>
                     </div>
                 </div>
-                <div class="col-6 col-md-4">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
                         <div class="icon-chip icon-chip--pink mx-auto mb-2"><i class="fa-solid fa-hand-holding-dollar"></i></div>
                         <div class="stat-value">{{ number_format($totalMasseuseCommission) }}</div>
-                        <div class="stat-label">ค่าคอมมิชชันรวม (฿)</div>
+                        <div class="stat-label">คอมมิชชันรวม (฿)</div>
                     </div>
                 </div>
-                <div class="col-12 col-md-4">
+                <div class="col-6 col-md-3">
                     <div class="stat-card">
-                        <div class="icon-chip icon-chip--mint mx-auto mb-2"><i class="fa-solid fa-people-arrows"></i></div>
-                        <div class="stat-value">{{ number_format($totalQueues) }}</div>
-                        <div class="stat-label">จำนวนรอบรวม</div>
+                        <div class="icon-chip icon-chip--amber mx-auto mb-2"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                        <div class="stat-value">{{ number_format($totalMasseuseTopUp) }}</div>
+                        <div class="stat-label">เงินสมทบรวม (฿)</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="stat-card">
+                        <div class="icon-chip icon-chip--mint mx-auto mb-2"><i class="fa-solid fa-sack-dollar"></i></div>
+                        <div class="stat-value text-success">{{ number_format($totalMasseusePaid) }}</div>
+                        <div class="stat-label fw-bold">ยอดที่ต้องจ่ายรวม (฿)</div>
                     </div>
                 </div>
             </div>
@@ -546,7 +555,7 @@
         <div class="col-12 col-xl-8">
             <div class="card border-0 shadow-sm table-card">
                 <div class="card-header bg-white border-0 pt-3 pb-2 d-flex align-items-center justify-content-between">
-                    <h6 class="fw-bold mb-0"><span class="icon-chip icon-chip--violet me-2"><i class="fa-solid fa-user-nurse"></i></span>รายละเอียดหมอนวด</h6>
+                    <h6 class="fw-bold mb-0"><span class="icon-chip icon-chip--violet me-2"><i class="fa-solid fa-user-nurse"></i></span>รายละเอียดการจ่ายเงินหมอนวด</h6>
                     <span class="badge-soft">{{ count($masseuseReport['masseuses']) }} คน</span>
                 </div>
                 <div class="card-body p-2 p-lg-3">
@@ -558,8 +567,9 @@
                                     <th style="min-width: 150px;">ชื่อ</th>
                                     <th class="text-end" style="min-width: 80px;">รายได้ (฿)</th>
                                     <th class="text-end" style="min-width: 80px;">คอมมิชชัน (฿)</th>
-                                    <th class="text-end" style="min-width: 80px;">จำนวนรอบ</th>
-                                    <th class="text-end" style="min-width: 80px;">จำนวนบริการ</th>
+                                    <th class="text-end" style="min-width: 80px;">เงินสมทบ (฿)</th>
+                                    <th class="text-end" style="min-width: 80px;">รวมจ่าย (฿)</th>
+                                    <th class="text-end" style="min-width: 60px;">รอบ</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -568,12 +578,13 @@
                                     <td class="fw-bold text-muted">{{ $idx + 1 }}</td>
                                     <td class="fw-bold">{{ $ms['name'] }}</td>
                                     <td class="text-end">{{ number_format($ms['total_revenue']) }}</td>
-                                    <td class="text-end text-success fw-bold">{{ number_format($ms['total_commission']) }}</td>
+                                    <td class="text-end">{{ number_format($ms['total_commission']) }}</td>
+                                    <td class="text-end text-warning">{{ number_format($ms['top_up']) }}</td>
+                                    <td class="text-end text-success fw-bold">{{ number_format($ms['total_paid']) }}</td>
                                     <td class="text-end">{{ number_format($ms['queue_count']) }}</td>
-                                    <td class="text-end">{{ number_format($ms['total_services']) }}</td>
                                 </tr>
                                 @empty
-                                <tr><td colspan="6" class="text-center text-muted py-4">ไม่มีข้อมูล</td></tr>
+                                <tr><td colspan="7" class="text-center text-muted py-4">ไม่มีข้อมูล</td></tr>
                                 @endforelse
                             </tbody>
                         </table>

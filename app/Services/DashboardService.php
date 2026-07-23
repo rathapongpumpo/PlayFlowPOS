@@ -80,7 +80,7 @@ class DashboardService
             return $carry + $m['top_up'];
         }, 0));
         
-        $netProfit = (int) round($rangeSales) - $rangeCommissionOnly;
+        $netProfit = (int) round($rangeSales) - $rangeCommissionOnly - $rangeTopUpOnly;
 
         // New vs Old Customers for today
         $todayActiveCustomers = DB::table('orders')
