@@ -264,6 +264,10 @@ class ReceiptService
             return 'ตัดแพ็กเกจ';
         }
 
+        if ($method === 'wallet') {
+            return 'กระเป๋าเงิน (Wallet)';
+        }
+
         return $method;
     }
 

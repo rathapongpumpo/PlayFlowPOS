@@ -34,6 +34,7 @@ class PosController extends Controller
             'tip_amount' => 'nullable|numeric|min:0',
             'points_redeem' => 'nullable|integer|min:0',
             'payment_method' => 'required|string|in:cash,transfer,card,credit_card,package_redeem,wallet',
+            'use_package' => 'nullable|boolean',
             'items' => 'required|array|min:1',
             'items.*.type' => 'required|string|in:service,product,package',
             'items.*.source_id' => 'required|integer',

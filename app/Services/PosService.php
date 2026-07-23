@@ -1013,7 +1013,7 @@ class PosService
             return 'credit_card';
         }
 
-        if (in_array($method, ['cash', 'transfer', 'credit_card', 'package_redeem'], true)) {
+        if (in_array($method, ['cash', 'transfer', 'credit_card', 'package_redeem', 'wallet'], true)) {
             return $method;
         }
 
