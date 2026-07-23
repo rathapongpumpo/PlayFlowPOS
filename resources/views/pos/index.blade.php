@@ -651,25 +651,25 @@
         }
 
         const balances = customerPackageBalances[String(resolvedCustomerId)] || [];
-        if (!Array.isArray(balances) || balances.length === 0) {
-            packageBalanceHintEl.textContent = 'ไม่มีแพ็กเกจคงเหลือ';
-            return;
-        }
-
-        const previews = balances.slice(0, 2).map((balance) => {
-            const name = String(balance.package_name || 'Package');
-            const qty = Number(balance.remaining_qty || 0).toLocaleString('th-TH');
-            return `${name} (${qty} สิทธิ์)`;
-        });
-        const tail = balances.length > 2 ? ` +${balances.length - 2}` : '';
-        
         const customer = customers.find(c => Number(c.id) === resolvedCustomerId);
+        
         const wallet = customer && customer.wallet_balance ? Number(customer.wallet_balance).toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '0.00';
         const points = customer && customer.total_points ? Number(customer.total_points).toLocaleString('th-TH') : '0';
         const stamps = customer && customer.total_stamps ? Number(customer.total_stamps).toLocaleString('th-TH') : '0';
+
+        let packageText = 'ไม่มีแพ็กเกจคงเหลือ';
+        if (Array.isArray(balances) && balances.length > 0) {
+            const previews = balances.slice(0, 2).map((balance) => {
+                const name = String(balance.package_name || 'Package');
+                const qty = Number(balance.remaining_qty || 0).toLocaleString('th-TH');
+                return `${name} (${qty} สิทธิ์)`;
+            });
+            const tail = balances.length > 2 ? ` +${balances.length - 2}` : '';
+            packageText = `แพ็กเกจคงเหลือ: ${previews.join(', ')}${tail}`;
+        }
         
         packageBalanceHintEl.innerHTML = `
-            แพ็กเกจคงเหลือ: ${previews.join(', ')}${tail}<br>
+            ${packageText}<br>
             <span class="text-primary"><i class="fa-solid fa-wallet"></i> กระเป๋าเงิน: ${wallet}฿</span> | 
             <span class="text-warning"><i class="fa-solid fa-star"></i> ${points} pts</span> |
             <span class="text-info"><i class="fa-solid fa-award"></i> แสตมป์: ${stamps} ดวง</span>
