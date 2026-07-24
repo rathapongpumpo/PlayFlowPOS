@@ -496,11 +496,14 @@ class DashboardService
 
         $masseuseBaseSalaries = DB::table('masseuses')
             ->where('branch_id', $branchId)
-            ->pluck('base_salary', 'id');
+            ->get(['id', 'base_salary', 'guarantee_amount', 'nickname', 'full_name'])
+            ->keyBy('id');
 
         $allIds = array_values(array_unique(array_merge(
             array_map('intval', array_keys($revenues->all())),
-            array_map('intval', array_keys($commissions->all()))
+            array_map('intval', array_keys($commissions->all())),
+            array_map('intval', array_column($dailyAttendances->all(), 'id')),
+            array_map('intval', array_keys($masseuseBaseSalaries->filter(fn($m) => (float)$m->guarantee_amount > 0)->all()))
         )));
 
         $daysInPeriod = max(1, (int) $from->diffInDays($to));
@@ -509,9 +512,10 @@ class DashboardService
         foreach ($allIds as $id) {
             $revenue = $revenues->get($id);
             $commission = $commissions->get($id);
+            $masseuseData = $masseuseBaseSalaries->get($id);
             
             $shiftSalary = (float) ($baseSalariesByMasseuse[$id] ?? 0);
-            $fallbackSalary = (float) ((($masseuseBaseSalaries->get($id) ?? 0) / 30) * $daysInPeriod);
+            $fallbackSalary = (float) ($masseuseData->guarantee_amount ?? 0);
             $baseSalary = $shiftSalary > 0 ? $shiftSalary : $fallbackSalary;
 
             $commissionAmt = (float) ($commission->commission ?? 0);
@@ -524,9 +528,11 @@ class DashboardService
 
             $tipAmt = (float) ($tipsByMasseuse[$id] ?? 0);
 
+            $fallbackName = $masseuseData ? ($masseuseData->nickname ?: $masseuseData->full_name) : ('Masseuse #' . $id);
+
             $rows[$id] = [
                 'id' => (int) $id,
-                'name' => $revenue->name ?? ($id === 0 ? 'ไม่ระบุ' : ('Masseuse #' . $id)),
+                'name' => $revenue->name ?? ($id === 0 ? 'ไม่ระบุ' : $fallbackName),
                 'income' => (float) ($revenue->income ?? 0),
                 'commission' => $commissionAmt,
                 'tip' => $tipAmt,
