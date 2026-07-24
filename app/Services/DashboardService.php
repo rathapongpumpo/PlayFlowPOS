@@ -453,14 +453,37 @@ class DashboardService
             }
         }
 
-        $dailyAttendances = DB::table('staff_attendance')
-            ->join('masseuses', 'staff_attendance.masseuse_id', '=', 'masseuses.id')
-            ->where('masseuses.branch_id', $branchId)
-            ->where('staff_attendance.is_working', 1)
-            ->where('staff_attendance.attendance_date', '>=', $from->toDateString())
-            ->where('staff_attendance.attendance_date', '<', $to->toDateString())
-            ->select('staff_attendance.masseuse_id as id', 'staff_attendance.attendance_date as date', 'masseuses.guarantee_amount')
+        $masseuseBaseSalaries = DB::table('masseuses')
+            ->where('branch_id', $branchId)
+            ->get(['id', 'base_salary', 'guarantee_amount', 'nickname', 'full_name'])
+            ->keyBy('id');
+
+        $notWorkingRecords = DB::table('staff_attendance')
+            ->where('attendance_date', '>=', $from->toDateString())
+            ->where('attendance_date', '<', $to->toDateString())
+            ->where('is_working', 0)
             ->get();
+
+        $notWorkingMap = [];
+        foreach ($notWorkingRecords as $nw) {
+            $notWorkingMap[(int)$nw->masseuse_id][$nw->attendance_date] = true;
+        }
+
+        $dailyAttendances = [];
+        $currentDate = $from->copy();
+        while ($currentDate->lt($to)) {
+            $dateStr = $currentDate->toDateString();
+            foreach ($masseuseBaseSalaries as $m) {
+                if (!isset($notWorkingMap[$m->id][$dateStr])) {
+                    $dailyAttendances[] = (object)[
+                        'id' => $m->id,
+                        'date' => $dateStr,
+                        'guarantee_amount' => $m->guarantee_amount,
+                    ];
+                }
+            }
+            $currentDate->addDay();
+        }
 
         $dailyCommissionQuery = DB::table('commissions as c')
             ->join('order_items as oi', 'oi.id', '=', 'c.order_item_id')
@@ -494,16 +517,10 @@ class DashboardService
             $topUpsByMasseuse[$mId] = ($topUpsByMasseuse[$mId] ?? 0.0) + $topUp;
         }
 
-        $masseuseBaseSalaries = DB::table('masseuses')
-            ->where('branch_id', $branchId)
-            ->get(['id', 'base_salary', 'guarantee_amount', 'nickname', 'full_name'])
-            ->keyBy('id');
-
         $allIds = array_values(array_unique(array_merge(
             array_map('intval', array_keys($revenues->all())),
             array_map('intval', array_keys($commissions->all())),
-            array_map('intval', array_column($dailyAttendances->all(), 'id')),
-            array_map('intval', array_keys($masseuseBaseSalaries->filter(fn($m) => (float)$m->guarantee_amount > 0)->all()))
+            array_map(fn($att) => (int)$att->id, $dailyAttendances)
         )));
 
         $daysInPeriod = max(1, (int) $from->diffInDays($to));
@@ -548,7 +565,7 @@ class DashboardService
 
     private function mergeMasseuseComparisons(array $todayRows, array $yesterdayRows): array
     {
-        $allIds = array_values(array_unique(array_merge(array_keys($todayRows), array_keys($yesterdayRows))));
+        $allIds = array_keys($todayRows);
         $merged = [];
 
         foreach ($allIds as $id) {
